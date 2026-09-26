@@ -1,0 +1,33 @@
+# Weather mode with 4TX x 4RX TDM-MIMO.
+# The chirp is shortened to 50 us so that each TX still repeats every 200 us (v_max 10 m/s);
+# with 200 us chirps TDM would cut v_max to 2.5 m/s. Range is limited to 3 km because the
+# echo delay must stay well below the chirp length.
+base: weather.yaml
+name: weather_mimo
+
+waveform:
+  t_chirp: 50.0e-6
+  n_chirps: 256           # 64 per TX, dwell 12.8 ms
+
+scene:
+  cells_per_bin: 2
+  wind:                   # horizontal wind along the array axis (+x), m/s
+    - [0.0, 2.0]
+    - [1000.0, 5.0]
+    - [2000.0, 8.0]
+    - [3000.0, 9.0]
+
+processing:
+  r_max: 3000.0
+  snr_threshold_db: -3.0
+
+mimo:
+  enabled: true
+  tx_gain_err_db: 0.5
+  tx_phase_err_deg: 10.0
+  rx_gain_err_db: 0.5
+  rx_phase_err_deg: 10.0
+  max_angle_deg: 20.0
+
+sim:
+  n_dwells: 8

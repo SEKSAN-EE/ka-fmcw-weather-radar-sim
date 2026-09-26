@@ -1,0 +1,27 @@
+# Lab validation: 1 GHz chirp, corner reflector at 1 m.
+base: default.yaml
+name: lab
+
+waveform:
+  bandwidth: 1.0e9
+  t_chirp: 10.0e-6
+  n_chirps: 16
+
+adc:
+  ddc_decimation: 2       # 1.25 GSPS complex to hold the 1 GHz chirp
+
+frontend:
+  pt_dbm: 0.0             # no PA
+
+scene:
+  kind: point
+  point_targets:
+    - {name: corner reflector, range_m: 1.0, rcs_dbsm: 5.0, velocity: 0.0}
+
+processing:
+  r_max: 10.0
+  clutter: none           # keep the static reflector
+  blank_m: 0.3
+  attenuation_correction: false
+
+sim: {if_chirps: 2}

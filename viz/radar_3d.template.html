@@ -1,0 +1,869 @@
+<meta charset="utf-8">
+<title>Ka-Band Rain Column</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #eef2f4;
+  --panel: #fbfcfc;
+  --ink: #14202b;
+  --ink-2: #4b5a66;
+  --muted: #7d8b96;
+  --line: #d5dde2;
+  --sky-top: #c9d9e6;
+  --sky-bottom: #eef2f4;
+  --ground: #dfe6ea;
+  --grid: #c5d0d7;
+  --beam: #4a3aa7;
+  --beam-soft: rgba(74, 58, 167, 0.14);
+  --rain: #2a78d6;
+  --melt: #eb6834;
+  --snow: #1baf7a;
+  --cloud: #eda100;
+  --good: #0a7d0a;
+  --crit: #c73535;
+  --z-lo: #cde2fb;
+  --z-hi: #104281;
+  --radar-body: #3b4852;
+  --rx: #56636e;
+  --tx1: #4a3aa7; --tx2: #eb6834; --tx3: #1baf7a; --tx4: #eda100;
+  --div-neg: #1c5cab; --div-mid: #e6e5e0; --div-pos: #c73535;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e151c; --panel: #121c25; --ink: #e8eef2; --ink-2: #a3b3bf; --muted: #718291; --line: #243240;
+    --sky-top: #070d13; --sky-bottom: #15222e; --ground: #121c24; --grid: #22313d;
+    --beam: #9085e9; --beam-soft: rgba(144, 133, 233, 0.16);
+    --rain: #3987e5; --melt: #d95926; --snow: #199e70; --cloud: #c98500;
+    --good: #2fbf2f; --crit: #e66767; --z-lo: #1c3a5c; --z-hi: #b7d3f6; --radar-body: #8d9ba6; --rx: #6c7a86;
+    --tx1: #9085e9; --tx2: #d95926; --tx3: #199e70; --tx4: #c98500; --div-neg: #5598e7; --div-mid: #3a3a37; --div-pos: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e151c; --panel: #121c25; --ink: #e8eef2; --ink-2: #a3b3bf; --muted: #718291; --line: #243240;
+  --sky-top: #070d13; --sky-bottom: #15222e; --ground: #121c24; --grid: #22313d;
+  --beam: #9085e9; --beam-soft: rgba(144, 133, 233, 0.16);
+  --rain: #3987e5; --melt: #d95926; --snow: #199e70; --cloud: #c98500;
+  --good: #2fbf2f; --crit: #e66767; --z-lo: #1c3a5c; --z-hi: #b7d3f6; --radar-body: #8d9ba6; --rx: #6c7a86;
+    --tx1: #9085e9; --tx2: #d95926; --tx3: #199e70; --tx4: #c98500; --div-neg: #5598e7; --div-mid: #3a3a37; --div-pos: #e66767;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: 100%; }
+.stage { position: relative; min-height: 420px; overflow: hidden; background: linear-gradient(var(--sky-top), var(--sky-bottom)); }
+#gl { display: block; width: 100%; height: 100%; }
+.hud { position: absolute; inset: 0; pointer-events: none; }
+.title-block { position: absolute; left: 20px; top: 18px; max-width: 30rem; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; margin: 4px 0 6px; text-wrap: balance; letter-spacing: 0.01em; }
+.lede { color: var(--ink-2); margin: 0; font-size: 13px; max-width: 34rem; }
+.hint { position: absolute; left: 20px; bottom: 14px; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+.tag { position: absolute; transform: translate(-50%, -100%); font-family: var(--font-display); font-size: 12px; font-weight: 500; white-space: nowrap; color: var(--ink); padding: 1px 6px; border-radius: 3px; background: color-mix(in srgb, var(--panel) 78%, transparent); border-left: 3px solid var(--c, var(--ink-2)); }
+.tag.left { transform: translate(0, -50%); }
+.tag.to-left { transform: translate(-100%, -50%); border-left: 0; border-right: 3px solid var(--c, var(--ink-2)); }
+.panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding-inline: 20px; padding-block: 18px 28px; display: flex; flex-direction: column; gap: 22px; }
+.section { display: flex; flex-direction: column; gap: 10px; }
+.section h2 { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; color: var(--ink-2); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: 500 13px var(--font-display); letter-spacing: 0.02em; padding: 8px 6px; border: 0; background: transparent; color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--beam); color: var(--panel); }
+.seg button:focus-visible, .chip:focus-visible, input:focus-visible { outline: 2px solid var(--beam); outline-offset: 2px; }
+.note { font-size: 12px; color: var(--muted); margin: 0; }
+.ctl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.ctl label { font-size: 13px; color: var(--ink); }
+.ctl output { font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.ctl input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--beam); }
+.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ph { border: 1px solid var(--line); border-radius: 6px; padding: 6px 4px; text-align: center; }
+.ph b { display: block; font: 500 11px var(--font-mono); color: var(--muted); letter-spacing: 0.05em; }
+.ph span { font: 500 15px var(--font-mono); font-variant-numeric: tabular-nums; }
+.ph .dial { width: 26px; height: 26px; margin: 2px auto 0; display: block; }
+.toggles { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; }
+.toggles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.toggles input { accent-color: var(--beam); }
+.layers { display: flex; flex-direction: column; gap: 8px; }
+.chip { display: grid; grid-template-columns: 12px 1fr auto; gap: 2px 10px; align-items: start; text-align: left; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.chip[aria-pressed="false"] { opacity: 0.45; }
+.chip .sw { width: 12px; height: 12px; border-radius: 3px; margin-top: 4px; background: var(--c); }
+.chip .nm { font-family: var(--font-display); font-weight: 600; font-size: 14px; }
+.chip .st { font: 500 11px var(--font-mono); padding: 2px 6px; border-radius: 10px; white-space: nowrap; align-self: center; }
+.st.ok { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+.st.part { color: #b07400; background: color-mix(in srgb, #eda100 16%, transparent); }
+.st.no { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+.chip .ds { grid-column: 2 / -1; font-size: 12px; color: var(--ink-2); }
+.chip .nums { grid-column: 2 / -1; font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.chart { position: relative; }
+.chart canvas { width: 100%; display: block; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.tip { position: absolute; pointer-events: none; font: 12px var(--font-mono); background: var(--ink); color: var(--panel); padding: 3px 7px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, -130%); }
+.va { width: 100%; height: auto; display: block; }
+.va text { font: 10px var(--font-mono); fill: var(--muted); }
+.divbar { height: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--div-neg), var(--div-mid), var(--div-pos)); }
+.divlab { display: flex; justify-content: space-between; font: 11px var(--font-mono); color: var(--muted); margin-top: 2px; }
+.kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.kv div { border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+.kv b { display: block; font: 500 14px var(--font-mono); font-variant-numeric: tabular-nums; }
+.kv span { font-size: 11.5px; color: var(--muted); line-height: 1.3; display: block; }
+input:disabled + output, .ctl input:disabled { opacity: 0.45; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 12px; margin: 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+  .stage { height: 72vh; min-height: 380px; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .title-block { right: 16px; left: 16px; }
+  .lede { display: none; }
+}
+</style>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="3D view of the radar, its beam and the cloud layers">
+    <canvas id="gl"></canvas>
+    <div class="hud" id="hud">
+      <div class="title-block">
+        <div class="eyebrow">ZCU216 · FMCW · <span id="m-rf"></span> GHz · vertically pointing</div>
+        <h1>Ka-Band Rain Column</h1>
+        <p class="lede">The TX array (4 channels) steers its beam by phase, or in MIMO mode fires one TX at a time. Wavefronts leave the radar and echo back from each layer only when its reflectivity clears the minimum detectable Z. Heights to scale; radar enlarged about 2000×.</p>
+      </div>
+      <div class="hint">drag to orbit · scroll to zoom · right-drag to pan</div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="section">
+      <h2>Receiver</h2>
+      <div class="seg" role="group" aria-label="Receiver scenario" id="scen"></div>
+      <p class="note" id="scen-hint"></p>
+    </div>
+
+    <div class="section">
+      <h2>Beam</h2>
+      <div class="ctl">
+        <label for="el">Mechanical elevation</label><output id="el-out" for="el"></output>
+        <input type="range" id="el" min="20" max="90" step="1" value="90">
+      </div>
+      <div class="ctl">
+        <label for="az">Electronic steering (TX phase)</label><output id="az-out" for="az"></output>
+        <input type="range" id="az" min="-40" max="40" step="1" value="0">
+      </div>
+      <div class="phases" id="phases" aria-label="Phase applied to each TX channel"></div>
+      <p class="note">Element spacing λ/2: channel n gets φ<sub>n</sub> = −180°·n·sin θ. Four elements set a beam about 26° wide; the 20° beam in the link budget comes from the full sub-array.</p>
+      <div class="toggles">
+        <label><input type="checkbox" id="t-waves" checked> wavefronts</label>
+        <label><input type="checkbox" id="t-echo" checked> echoes</label>
+        <label><input type="checkbox" id="t-gates" checked> range gates</label>
+        <label><input type="checkbox" id="t-anim" checked> animate</label>
+      </div>
+    </div>
+
+    <div class="section" id="mimo-sec">
+      <h2>MIMO · 4 TX × 4 RX (TDM)</h2>
+      <div class="toggles">
+        <label><input type="checkbox" id="t-mimo"> MIMO mode</label>
+        <label><input type="checkbox" id="t-fan" checked> angle bins</label>
+        <label><input type="checkbox" id="t-wind" checked> wind arrows</label>
+      </div>
+      <svg id="va" class="va" viewBox="0 0 360 92" role="img" aria-label="TX, RX and virtual element positions"></svg>
+      <div class="kv" id="mimo-kv"></div>
+      <div>
+        <div class="divbar" aria-hidden="true"></div>
+        <div class="divlab"><span id="div-lo"></span><span>v<sub>r</sub> − mean across the beam</span><span id="div-hi"></span></div>
+      </div>
+      <p class="note">In MIMO mode the TX channels fire in turn (colors) and the angle is formed digitally from the 16 virtual elements. The fan shows each angle bin, colored by how much faster (red) or slower (blue) the rain approaches than the beam average. The left/right tilt of that pattern is the horizontal wind, shown as arrows: solid = retrieved, grey = truth.</p>
+      <div class="chart"><canvas id="windc" height="300" aria-label="Retrieved wind profile versus truth"></canvas><div class="tip" id="tip-wind" hidden></div></div>
+    </div>
+
+    <div class="section">
+      <h2>Layers along the beam</h2>
+      <div class="layers" id="layers"></div>
+    </div>
+
+    <div class="section">
+      <h2>Reflectivity profile (simulated, vertical beam)</h2>
+      <div class="chart"><canvas id="prof" height="300" aria-label="Reflectivity versus height"></canvas><div class="tip" id="tip-prof" hidden></div></div>
+    </div>
+
+    <div class="section">
+      <h2>Doppler spectrogram (simulated)</h2>
+      <div class="chart"><canvas id="spec" height="300" aria-label="Doppler spectrum versus height"></canvas><div class="tip" id="tip-spec" hidden></div></div>
+      <p class="note">Rain falls at 6–7 m/s with a wide spectrum; its fast tail wraps past +v<sub>max</sub> to −v<sub>max</sub>. The bright band is where fall speed jumps from snow (~1.5 m/s) to rain.</p>
+    </div>
+
+    <div class="section">
+      <h2>System</h2>
+      <dl class="facts" id="facts"></dl>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = __SCENE_DATA__;
+const U = 100;                        // metres per scene unit
+const KIND_VAR = { rain: "--rain", melting: "--melt", snow: "--snow", cloud: "--cloud" };
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let scen = 0;
+
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const lerp = (a, b, t) => a + (b - a) * t;
+function interp(xs, ys, x) {
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[xs.length - 1]) return ys[ys.length - 1];
+  let lo = 0, hi = xs.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] <= x) lo = m; else hi = m; }
+  const a = ys[lo], b = ys[hi];
+  if (a == null || b == null) return a ?? b;
+  return lerp(a, b, (x - xs[lo]) / (xs[hi] - xs[lo]));
+}
+function mixHex(h1, h2, t) {
+  const c1 = new THREE.Color(h1), c2 = new THREE.Color(h2);
+  return c1.lerp(c2, Math.min(1, Math.max(0, t)));
+}
+const zColor = (dbz) => mixHex(css("--z-lo"), css("--z-hi"), (dbz + 10) / 50);
+const layerColor = (L) => css(KIND_VAR[L.kind] || "--muted");
+
+/* ------------------------------------------------------------------ three.js scene */
+const stage = document.getElementById("stage");
+const canvas = document.getElementById("gl");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 2000);
+camera.position.set(98, 30, 112);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(0, 26, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 6; controls.maxDistance = 260;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.0));
+const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(30, 60, 20); scene.add(sun);
+
+const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 96), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+ground.rotation.x = -Math.PI / 2; scene.add(ground);
+let grid = null;
+function buildGrid() {
+  if (grid) scene.remove(grid);
+  grid = new THREE.PolarGridHelper(80, 12, 8, 96, css("--grid"), css("--grid"));
+  grid.position.y = 0.02; scene.add(grid);
+}
+
+/* height scale: tick marks on a mast next to the column */
+const scaleGroup = new THREE.Group(); scene.add(scaleGroup);
+function buildScale() {
+  scaleGroup.clear();
+  const mat = new THREE.LineBasicMaterial({ color: css("--muted") });
+  const pts = [new THREE.Vector3(-52, 0, -30), new THREE.Vector3(-52, 60, -30)];
+  scaleGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+  for (let km = 0; km <= 6; km++) {
+    const y = km * 10;
+    const t = [new THREE.Vector3(-53.5, y, -30), new THREE.Vector3(-50.5, y, -30)];
+    scaleGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(t), mat));
+  }
+}
+
+/* ------------------------------------------------------------------ radar (enlarged) */
+const radar = new THREE.Group(); scene.add(radar);
+const board = new THREE.Group(); radar.add(board);
+const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 1.6, 20), new THREE.MeshStandardMaterial({ color: 0x55616b, roughness: 0.7 }));
+pedestal.position.y = 0.8; radar.add(pedestal);
+board.position.y = 2.1;
+const boardMesh = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.4, 0.18), new THREE.MeshStandardMaterial({ color: 0x3b4852, roughness: 0.5 }));
+board.add(boardMesh);
+const txPatches = [], rxPatches = [];
+const patchGeo = new THREE.BoxGeometry(0.22, 0.22, 0.04);
+for (let side = 0; side < 2; side++) {
+  for (let n = 0; n < 4; n++) {
+    for (let k = 0; k < 6; k++) {
+      const m = new THREE.Mesh(patchGeo, new THREE.MeshStandardMaterial({ color: 0xb08d57, metalness: 0.6, roughness: 0.35, emissive: 0x000000 }));
+      m.position.set((side === 0 ? -1.95 : 0.45) + n * 0.5, -0.95 + k * 0.38, 0.11);
+      board.add(m);
+      (side === 0 ? txPatches : rxPatches).push({ mesh: m, n });
+    }
+  }
+}
+const txCenterLocal = new THREE.Vector3(-1.2, 0, 0.12);
+const rxCenterLocal = new THREE.Vector3(1.2, 1.35, 0.12);
+
+/* ------------------------------------------------------------------ beam, waves, echoes, gates */
+const L_MAX = 60;
+const beamGroup = new THREE.Group(); scene.add(beamGroup);
+const halfBeam = THREE.MathUtils.degToRad(DATA.meta.beam_deg / 2);
+const coneGeo = new THREE.ConeGeometry(L_MAX * Math.tan(halfBeam), L_MAX, 48, 1, true);
+coneGeo.rotateX(Math.PI); coneGeo.translate(0, L_MAX / 2, 0);
+const coneMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false });
+const cone = new THREE.Mesh(coneGeo, coneMat); beamGroup.add(cone);
+const axisMat = new THREE.LineDashedMaterial({ dashSize: 1, gapSize: 0.8, transparent: true, opacity: 0.6 });
+const axisLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, L_MAX, 0)]), axisMat);
+axisLine.computeLineDistances(); beamGroup.add(axisLine);
+
+const capGeo = new THREE.SphereGeometry(1, 40, 6, 0, Math.PI * 2, 0, halfBeam);
+const waves = [];
+const N_WAVES = 12, WAVE_SPEED = 14;
+for (let i = 0; i < N_WAVES; i++) {
+  const m = new THREE.Mesh(capGeo, new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  beamGroup.add(m); waves.push({ mesh: m, r: (i * L_MAX) / N_WAVES, prev: 0, tx: (N_WAVES - i) % 4 });
+}
+const echoPool = [];
+for (let i = 0; i < 80; i++) {
+  const m = new THREE.Mesh(capGeo, new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  m.visible = false; beamGroup.add(m); echoPool.push({ mesh: m, r: 0, r0: 1, strength: 0, alive: false });
+}
+const gates = [];
+const GATE_STEP = 250;
+for (let r = GATE_STEP; r <= DATA.meta.r_max; r += GATE_STEP) {
+  const rad = (r / U) * Math.tan(halfBeam);
+  const g = new THREE.Mesh(new THREE.TorusGeometry(rad, Math.max(0.05, rad * 0.012), 6, 56), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
+  g.rotation.x = Math.PI / 2; g.position.y = r / U;
+  beamGroup.add(g); gates.push({ mesh: g, r, detected: false, dbz: null, layer: -1 });
+}
+
+/* ------------------------------------------------------------------ clouds */
+function spriteTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d");
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, "rgba(255,255,255,1)"); grad.addColorStop(0.45, "rgba(255,255,255,0.55)"); grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const sprite = spriteTexture();
+const COUNTS = { rain: 5200, melting: 2600, snow: 3200, cloud: 3600 };
+const SIZES = { rain: 0.55, melting: 0.9, snow: 0.8, cloud: 2.6 };
+const RADIUS = { rain: 34, melting: 40, snow: 44, cloud: 52 };
+const clouds = DATA.layers.map((L, i) => {
+  const n = COUNTS[L.kind] || 2000, R = RADIUS[L.kind] || 40;
+  const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), speed = new Float32Array(n);
+  const y0 = L.r_bottom / U, y1 = L.r_top / U;
+  for (let k = 0; k < n; k++) {
+    const a = Math.random() * Math.PI * 2, rr = R * Math.sqrt(Math.random()) * (0.75 + 0.25 * Math.random());
+    const y = lerp(y0, y1, L.kind === "melting" ? 0.5 + 0.5 * (Math.random() - 0.5) * 1.6 : Math.random());
+    pos.set([Math.cos(a) * rr, y, Math.sin(a) * rr], k * 3);
+    const f = (y - y0) / (y1 - y0);
+    speed[k] = lerp(L.v_bottom, L.v_top, f) * (0.8 + 0.4 * Math.random());
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: SIZES[L.kind] || 0.5, map: sprite, vertexColors: true, transparent: true,
+    opacity: L.kind === "cloud" ? 0.45 : 0.9, depthWrite: false, sizeAttenuation: true });
+  const pts = new THREE.Points(geo, mat); scene.add(pts);
+  return { L, pts, pos, col, speed, y0, y1, n, visible: true };
+});
+function paintClouds() {
+  for (const c of clouds) {
+    const base = new THREE.Color(layerColor(c.L)), white = new THREE.Color(css("--panel"));
+    for (let k = 0; k < c.n; k++) {
+      const t = Math.random() * 0.3;
+      const cc = base.clone().lerp(white, t);
+      c.col.set([cc.r, cc.g, cc.b], k * 3);
+    }
+    c.pts.geometry.attributes.color.needsUpdate = true;
+  }
+}
+
+/* ------------------------------------------------------------------ MIMO (block 18) */
+const M = DATA.mimo;
+const tMimo = document.getElementById("t-mimo"), tFan = document.getElementById("t-fan"), tWind = document.getElementById("t-wind");
+let mimoOn = false, TXC = [], BEAMC = null;
+function cacheColors() { TXC = [0, 1, 2, 3].map((t) => new THREE.Color(css(`--tx${t + 1}`))); BEAMC = new THREE.Color(css("--beam")); }
+const mimoGroup = new THREE.Group(); scene.add(mimoGroup);
+const windGroup = new THREE.Group(); mimoGroup.add(windGroup);
+let fanMesh = null;
+function cellEdges(c) {
+  const e = [c[0] - (c[1] - c[0]) / 2];
+  for (let i = 1; i < c.length; i++) e.push((c[i - 1] + c[i]) / 2);
+  e.push(c[c.length - 1] + (c[c.length - 1] - c[c.length - 2]) / 2);
+  return e;
+}
+const ANOM_LIM = (() => {
+  const a = M.anom.flat().filter((x) => x != null).map(Math.abs).sort((x, y) => x - y);
+  return a[Math.floor(a.length * 0.98)] || 1;
+})();
+function divColor(x) {
+  const t = Math.max(-1, Math.min(1, x / ANOM_LIM));
+  return t < 0 ? mixHex(css("--div-mid"), css("--div-neg"), -t) : mixHex(css("--div-mid"), css("--div-pos"), t);
+}
+function fanPoint(r, thDeg, origin) {
+  const th = THREE.MathUtils.degToRad(thDeg);
+  return origin.clone().add(dir0.clone().multiplyScalar(Math.cos(th) * r / U)).add(U_AXIS.clone().multiplyScalar(Math.sin(th) * r / U));
+}
+// the angle fan lies in the plane of the array axis (x) and the beam; data are from the vertical-beam simulation
+function buildMimo() {
+  if (fanMesh) { mimoGroup.remove(fanMesh); fanMesh.geometry.dispose(); fanMesh.material.dispose(); fanMesh = null; }
+  windGroup.clear();
+  mimoGroup.visible = mimoOn;
+  if (!mimoOn) return;
+  const origin = beamGroup.position.clone();
+  const te = cellEdges(M.theta), re = cellEdges(M.r);
+  const pos = [], col = [];
+  for (let i = 0; i < M.theta.length; i++) {
+    for (let j = 0; j < M.r.length; j++) {
+      const a = M.anom[i][j];
+      if (a == null) continue;
+      const p00 = fanPoint(re[j], te[i], origin), p10 = fanPoint(re[j + 1], te[i], origin);
+      const p11 = fanPoint(re[j + 1], te[i + 1], origin), p01 = fanPoint(re[j], te[i + 1], origin);
+      for (const q of [p00, p10, p11, p00, p11, p01]) pos.push(q.x, q.y, q.z);
+      const c = divColor(a);
+      for (let q = 0; q < 6; q++) col.push(c.r, c.g, c.b);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  fanMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+  fanMesh.visible = tFan.checked;
+  mimoGroup.add(fanMesh);
+  const W = M.wind, ink = new THREE.Color(css("--ink")), ghost = new THREE.Color(css("--muted"));
+  const behind = new THREE.Vector3().crossVectors(dir0, U_AXIS).normalize().multiplyScalar(0.7);
+  let lastH = -1e9;
+  for (let i = 0; i < W.h.length; i++) {
+    if (W.h[i] - lastH < 240) continue;
+    lastH = W.h[i];
+    const at = origin.clone().add(dir0.clone().multiplyScalar(W.h[i] / U));
+    const arrow = (u, from, color, head) => {
+      if (u == null) return;
+      const dir = u >= 0 ? U_AXIS.clone() : U_AXIS.clone().negate();
+      windGroup.add(new THREE.ArrowHelper(dir, from, Math.max(0.3, Math.abs(u) * 0.9), color, head, head * 0.6));
+    };
+    arrow(W.u_true[i], at.clone().add(behind), ghost, 0.7);
+    arrow(W.u[i], at, ink, 0.9);
+  }
+  windGroup.visible = tWind.checked;
+}
+
+function renderVA() {
+  const svg = document.getElementById("va");
+  const X = (x) => 44 + x * 40;
+  let h = `<text x="2" y="19">TX</text><text x="2" y="45">RX</text><text x="2" y="71">virtual</text>`;
+  for (let t = 0; t < M.n_tx; t++) h += `<rect x="${X(t * M.tx_spacing) - 6}" y="9" width="12" height="12" rx="2" fill="var(--tx${t + 1})"/>`;
+  for (let r = 0; r < M.n_rx; r++) h += `<circle cx="${X(r * M.rx_spacing)}" cy="41" r="6" fill="var(--rx)"/>`;
+  for (let t = 0; t < M.n_tx; t++) for (let r = 0; r < M.n_rx; r++) {
+    const x = X(t * M.tx_spacing + r * M.rx_spacing);
+    h += `<path d="M${x} 61 l6 6 l-6 6 l-6 -6 z" fill="var(--tx${t + 1})"/>`;
+  }
+  h += `<text x="${X(0)}" y="90" text-anchor="middle">0</text><text x="${X(7.5)}" y="90" text-anchor="middle">7.5λ</text>`;
+  svg.innerHTML = h;
+  document.getElementById("mimo-kv").innerHTML =
+    `<div><b>${M.t_chirp_us} µs</b><span>chirp; each TX repeats every ${M.t_chirp_us * M.n_tx} µs</span></div>` +
+    `<div><b>±${M.v_max} m/s</b><span>v<sub>max</sub> (only ±${M.v_max_200us} with 200 µs chirps)</span></div>` +
+    `<div><b>${M.n_tx * M.n_rx} × λ/2</b><span>virtual elements, aperture ${M.n_tx * M.n_rx * M.rx_spacing}λ</span></div>` +
+    `<div><b>≈${M.res_deg}°</b><span>angle resolution inside the ${DATA.meta.beam_deg}° beam</span></div>`;
+  document.getElementById("div-lo").textContent = `−${ANOM_LIM.toFixed(1)}`;
+  document.getElementById("div-hi").textContent = `+${ANOM_LIM.toFixed(1)} m/s`;
+}
+
+/* ------------------------------------------------------------------ detection model along the beam */
+const elIn = document.getElementById("el"), azIn = document.getElementById("az");
+let beamDir = new THREE.Vector3(0, 1, 0), dir0 = new THREE.Vector3(0, 1, 0);
+const U_AXIS = new THREE.Vector3(1, 0, 0);
+
+function layerAt(h) { return DATA.layers.findIndex((L) => h >= L.r_bottom && h < L.r_top); }
+function evaluateGates() {
+  const S = DATA.scenarios[scen];
+  const sinEl = Math.max(0.05, beamDir.y);
+  const perLayer = DATA.layers.map(() => ({ n: 0, det: 0 }));
+  for (const g of gates) {
+    const h = g.r * sinEl;
+    const dbzTrue = interp(DATA.profile.h, DATA.profile.dbz, h);
+    const pia = (interp(DATA.profile.h, DATA.profile.pia, h) || 0) / sinEl;
+    const mdz = interp(S.meas.r, S.meas.mdz, g.r);
+    const li = layerAt(h);
+    g.layer = li;
+    g.dbz = dbzTrue == null ? null : dbzTrue - pia;
+    g.detected = li >= 0 && g.dbz != null && mdz != null && g.dbz >= mdz;
+    g.margin = g.detected ? g.dbz - mdz : 0;
+    if (li >= 0) { perLayer[li].n++; if (g.detected) perLayer[li].det++; }
+  }
+  return perLayer;
+}
+
+function updateBeam() {
+  const el = THREE.MathUtils.degToRad(+elIn.value), az = THREE.MathUtils.degToRad(+azIn.value);
+  dir0.set(0, Math.sin(el), Math.cos(el)).normalize();
+  board.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir0);
+  beamDir = dir0.clone().multiplyScalar(Math.cos(az)).add(U_AXIS.clone().multiplyScalar(Math.sin(az))).normalize();
+  radar.updateMatrixWorld(true);
+  beamGroup.position.copy(board.localToWorld(txCenterLocal.clone()));
+  beamGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamDir);
+  document.getElementById("el-out").textContent = `${elIn.value}°`;
+  document.getElementById("az-out").textContent = `${azIn.value > 0 ? "+" : ""}${azIn.value}°`;
+  renderPhases();
+  buildMimo();
+  const perLayer = evaluateGates();
+  paintGates();
+  renderLayers(perLayer);
+}
+
+function paintGates() {
+  const faint = new THREE.Color(css("--muted"));
+  for (const g of gates) {
+    const vis = g.layer < 0 || clouds[g.layer].visible;
+    if (g.detected && vis) { g.mesh.material.color.copy(zColor(g.dbz)); g.mesh.material.opacity = 0.95; }
+    else { g.mesh.material.color.copy(faint); g.mesh.material.opacity = 0.22; }
+  }
+}
+
+/* ------------------------------------------------------------------ panel */
+const phasesEl = document.getElementById("phases");
+function phaseOf(n) {
+  const th = THREE.MathUtils.degToRad(+azIn.value);
+  let p = -180 * n * Math.sin(th);
+  p = ((p + 180) % 360 + 360) % 360 - 180;
+  return p;
+}
+function renderPhases() {
+  phasesEl.innerHTML = "";
+  if (mimoOn) {
+    for (let n = 0; n < 4; n++) {
+      phasesEl.insertAdjacentHTML("beforeend",
+        `<div class="ph"><b>TX${n + 1}</b><span style="color:var(--tx${n + 1})">chirp ${n}</span>` +
+        `<svg class="dial" viewBox="0 0 26 26" aria-hidden="true"><rect x="3" y="3" width="20" height="20" rx="4" fill="var(--tx${n + 1})"/></svg></div>`);
+    }
+    return;
+  }
+  for (let n = 0; n < 4; n++) {
+    const p = phaseOf(n), a = THREE.MathUtils.degToRad(p);
+    const x = 13 + 10 * Math.cos(a - Math.PI / 2), y = 13 + 10 * Math.sin(a - Math.PI / 2);
+    phasesEl.insertAdjacentHTML("beforeend",
+      `<div class="ph"><b>TX${n + 1}</b><span>${p >= 0 ? "+" : "−"}${Math.abs(p).toFixed(0)}°</span>` +
+      `<svg class="dial" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="10" fill="none" stroke="var(--line)" stroke-width="2"/>` +
+      `<line x1="13" y1="13" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--beam)" stroke-width="2.4" stroke-linecap="round"/></svg></div>`);
+  }
+}
+
+const layersEl = document.getElementById("layers");
+function renderLayers(perLayer) {
+  const order = DATA.layers.map((L, i) => i).reverse();
+  layersEl.innerHTML = "";
+  for (const i of order) {
+    const L = DATA.layers[i], s = perLayer[i];
+    const zmax = Math.max(L.dbz_bottom, L.dbz_top, L.dbz_peak ?? -99);
+    let cls = "no", txt = s.n ? "not detected" : "beam misses";
+    if (s.n && s.det / s.n > 0.6) { cls = "ok"; txt = "detected"; }
+    else if (s.det > 0) { cls = "part"; txt = `partly · ${s.det}/${s.n}`; }
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.id = `layer-${i}`;
+    b.setAttribute("aria-pressed", clouds[i].visible ? "true" : "false");
+    b.style.setProperty("--c", `var(${KIND_VAR[L.kind]})`);
+    b.innerHTML = `<span class="sw"></span><span class="nm">${L.name}</span><span class="st ${cls}">${txt}</span>` +
+      `<span class="nums">${(L.r_bottom / 1000).toFixed(1)}–${(L.r_top / 1000).toFixed(1)} km · up to ${zmax.toFixed(0)} dBZ · falls ${((L.v_bottom + L.v_top) / 2).toFixed(1)} m/s</span>` +
+      `<span class="ds">${L.text}</span>`;
+    b.addEventListener("click", () => {
+      clouds[i].visible = !clouds[i].visible; clouds[i].pts.visible = clouds[i].visible;
+      b.setAttribute("aria-pressed", clouds[i].visible ? "true" : "false"); paintGates();
+    });
+    layersEl.appendChild(b);
+  }
+}
+
+function renderScenarioButtons() {
+  const seg = document.getElementById("scen");
+  seg.innerHTML = "";
+  DATA.scenarios.forEach((S, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = `scen-${i}`; b.textContent = S.label;
+    b.setAttribute("aria-pressed", i === scen ? "true" : "false");
+    b.addEventListener("click", () => { scen = i; renderScenarioButtons(); updateBeam(); drawCharts(); renderFacts(); });
+    seg.appendChild(b);
+  });
+  const S = DATA.scenarios[scen];
+  document.getElementById("scen-hint").textContent =
+    `${S.hint}. Effective NF ${S.nf_eff_db} dB, SNR threshold ${S.snr_threshold_db} dB, ${S.n_dwells}×${S.n_chirps} chirps (${S.dwell_ms} ms).`;
+}
+
+function renderFacts() {
+  const m = DATA.meta, S = DATA.scenarios[scen];
+  const rows = [["RF / λ", `${m.f_rf_ghz.toFixed(2)} GHz / ${m.lam_mm} mm`], ["LO ×4 / IF", `${m.f_lo_ghz} / ${m.f_if_ghz} GHz`],
+    ["Chirp", `${m.bandwidth_mhz} MHz in ${m.t_chirp_us} µs`], ["Range bin", `${m.delta_r} m`],
+    ["Nyquist velocity", `±${m.v_max} m/s`], ["Pt / G", `${S.pt_dbm} dBm / ${m.g_dbi} dBi`], ["Beamwidth", `${m.beam_deg}° × ${m.beam_deg}°`]];
+  document.getElementById("facts").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+  document.getElementById("m-rf").textContent = m.f_rf_ghz.toFixed(1);
+}
+
+/* ------------------------------------------------------------------ 2D charts */
+function prepCanvas(cv) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = Math.round(w * 0.78);
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.height = `${h}px`;
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { g, w, h };
+}
+const PAD = { l: 42, r: 12, t: 12, b: 34 };
+function axes(g, w, h, xr, yr, xlabel, xticks, ystep = 1) {
+  const X = (x) => PAD.l + ((x - xr[0]) / (xr[1] - xr[0])) * (w - PAD.l - PAD.r);
+  const Y = (y) => h - PAD.b - ((y - yr[0]) / (yr[1] - yr[0])) * (h - PAD.t - PAD.b);
+  g.font = "11px 'IBM Plex Mono', monospace"; g.fillStyle = css("--muted"); g.strokeStyle = css("--line"); g.lineWidth = 1;
+  for (let km = yr[0]; km <= yr[1] + 1e-9; km += ystep) {
+    g.beginPath(); g.moveTo(PAD.l, Y(km)); g.lineTo(w - PAD.r, Y(km)); g.stroke();
+    g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(`${+km.toFixed(1)}`, PAD.l - 6, Y(km));
+  }
+  for (const x of xticks) {
+    g.beginPath(); g.moveTo(X(x), PAD.t); g.lineTo(X(x), h - PAD.b); g.stroke();
+    g.textAlign = "center"; g.textBaseline = "top"; g.fillText(`${x}`, X(x), h - PAD.b + 5);
+  }
+  g.fillStyle = css("--ink-2"); g.textAlign = "center"; g.fillText(xlabel, PAD.l + (w - PAD.l - PAD.r) / 2, h - 14);
+  g.save(); g.translate(11, PAD.t + (h - PAD.t - PAD.b) / 2); g.rotate(-Math.PI / 2); g.textBaseline = "middle"; g.fillText("height (km)", 0, 0); g.restore();
+  return { X, Y };
+}
+let profGeom = null, specGeom = null;
+function drawProfile() {
+  const cv = document.getElementById("prof"); const { g, w, h } = prepCanvas(cv);
+  g.clearRect(0, 0, w, h);
+  const xr = [-30, 45], yr = [0, 6];
+  const { X, Y } = axes(g, w, h, xr, yr, "reflectivity (dBZ)", [-20, 0, 20, 40]);
+  DATA.layers.forEach((L) => {
+    g.fillStyle = layerColor(L); g.globalAlpha = 0.12;
+    g.fillRect(PAD.l, Y(L.r_top / 1000), w - PAD.l - PAD.r, Y(L.r_bottom / 1000) - Y(L.r_top / 1000)); g.globalAlpha = 1;
+  });
+  const S = DATA.scenarios[scen];
+  const line = (xs, ys, color, dash) => {
+    g.strokeStyle = color; g.lineWidth = 2; g.setLineDash(dash || []); g.beginPath(); let pen = false;
+    xs.forEach((hh, k) => { const v = ys[k]; if (v == null || v < xr[0] - 5) { pen = false; return; }
+      const px = X(Math.min(xr[1], Math.max(xr[0], v))), py = Y(hh / 1000);
+      if (pen) g.lineTo(px, py); else { g.moveTo(px, py); pen = true; } });
+    g.stroke(); g.setLineDash([]);
+  };
+  line(DATA.profile.h, DATA.profile.dbz, css("--ink"));
+  line(S.meas.r, S.meas.mdz, css("--crit"), [5, 4]);
+  g.fillStyle = css("--beam");
+  S.meas.r.forEach((r, k) => { const v = S.meas.dbz[k]; if (v == null || !S.meas.valid[k]) return;
+    g.beginPath(); g.arc(X(Math.max(xr[0], Math.min(xr[1], v))), Y(r / 1000), 2, 0, Math.PI * 2); g.fill(); });
+  const lg = [["true Z", css("--ink"), false], ["measured", css("--beam"), true], ["min. detectable Z", css("--crit"), false]];
+  g.font = "11px 'IBM Plex Sans Thai', sans-serif"; g.textAlign = "left"; g.textBaseline = "middle";
+  lg.forEach(([t, c, dot], k) => { const y = PAD.t + 8 + k * 15, x = w - PAD.r - 118;
+    g.fillStyle = c; g.strokeStyle = c; g.lineWidth = 2;
+    if (dot) { g.beginPath(); g.arc(x + 8, y, 3, 0, Math.PI * 2); g.fill(); }
+    else { g.setLineDash(k === 2 ? [5, 4] : []); g.beginPath(); g.moveTo(x, y); g.lineTo(x + 16, y); g.stroke(); g.setLineDash([]); }
+    g.fillStyle = css("--ink-2"); g.fillText(t, x + 22, y); });
+  profGeom = { X, Y, xr, yr, w, h };
+}
+function drawSpectrum() {
+  const cv = document.getElementById("spec"); const { g, w, h } = prepCanvas(cv);
+  g.clearRect(0, 0, w, h);
+  const S = DATA.scenarios[scen], vm = DATA.meta.v_max;
+  const xr = [-vm, vm], yr = [0, 6];
+  const pw = w - PAD.l - PAD.r, ph = h - PAD.t - PAD.b;
+  const nR = S.spec.n_r, nV = S.spec.n_v;
+  const img = g.createImageData(nV, nR);
+  const lo = new THREE.Color(css("--z-lo")), hi = new THREE.Color(css("--z-hi")), bgc = new THREE.Color(css("--panel"));
+  for (let ri = 0; ri < nR; ri++) for (let vi = 0; vi < nV; vi++) {
+    const v = S.spec.db[ri * nV + vi];
+    const t = Math.max(0, Math.min(1, (v + 1) / 32));
+    const c = t < 0.08 ? bgc.clone().lerp(lo, t / 0.08) : lo.clone().lerp(hi, (t - 0.08) / 0.92);
+    const o = ((nR - 1 - ri) * nV + vi) * 4;
+    img.data[o] = c.r * 255; img.data[o + 1] = c.g * 255; img.data[o + 2] = c.b * 255; img.data[o + 3] = 255;
+  }
+  const off = document.createElement("canvas"); off.width = nV; off.height = nR; off.getContext("2d").putImageData(img, 0, 0);
+  const rTop = S.meas.r[nR - 1] / 1000;
+  const { X, Y } = axes(g, w, h, xr, yr, "Doppler velocity (m/s, + falling)", [-10, -5, 0, 5, 10].filter((x) => Math.abs(x) <= vm + 0.01));
+  g.imageSmoothingEnabled = false;
+  g.drawImage(off, PAD.l, Y(rTop), pw, Y(0) - Y(rTop));
+  g.strokeStyle = css("--ink"); g.lineWidth = 1.2; g.setLineDash([4, 3]); g.beginPath(); let pen = false;
+  DATA.profile.h.forEach((hh, k) => { const v = DATA.profile.v[k]; if (v == null) { pen = false; return; }
+    if (pen) g.lineTo(X(v), Y(hh / 1000)); else { g.moveTo(X(v), Y(hh / 1000)); pen = true; } });
+  g.stroke(); g.setLineDash([]);
+  specGeom = { X, Y, xr, yr, w, h, rTop };
+}
+let windGeom = null;
+function drawWind() {
+  const cv = document.getElementById("windc"); const { g, w, h } = prepCanvas(cv);
+  g.clearRect(0, 0, w, h);
+  const xr = [-2, 12], yr = [0, 3];
+  const { X, Y } = axes(g, w, h, xr, yr, "horizontal wind u along the array axis (m/s)", [0, 4, 8, 12], 0.5);
+  const W = M.wind;
+  const line = (ys, color, width, dash) => {
+    g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash || []); g.beginPath(); let pen = false;
+    W.h.forEach((hh, k) => { const v = ys[k]; if (v == null) { pen = false; return; }
+      if (pen) g.lineTo(X(v), Y(hh / 1000)); else { g.moveTo(X(v), Y(hh / 1000)); pen = true; } });
+    g.stroke(); g.setLineDash([]);
+  };
+  line(W.u_true, css("--ink"), 1.5);
+  line(W.u, css("--beam"), 2);
+  g.font = "11px 'IBM Plex Sans Thai', sans-serif"; g.textAlign = "left"; g.textBaseline = "middle";
+  [["truth", css("--ink")], [`retrieved (${M.wind_gates}-gate fit, ${M.n_dwells} dwells)`, css("--beam")]].forEach(([t, c], k) => {
+    const y = PAD.t + 8 + k * 15, x = PAD.l + 8;
+    g.strokeStyle = c; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 16, y); g.stroke();
+    g.fillStyle = css("--ink-2"); g.fillText(t, x + 22, y);
+  });
+  windGeom = { X, Y, xr, yr, w, h };
+}
+function drawCharts() { drawProfile(); drawSpectrum(); drawWind(); }
+
+function hookTip(cvId, tipId, fn) {
+  const cv = document.getElementById(cvId), tip = document.getElementById(tipId);
+  cv.addEventListener("mousemove", (e) => {
+    const b = cv.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
+    const txt = fn(x, y);
+    if (!txt) { tip.hidden = true; return; }
+    tip.hidden = false; tip.textContent = txt; tip.style.left = `${x}px`; tip.style.top = `${y}px`;
+  });
+  cv.addEventListener("mouseleave", () => { tip.hidden = true; });
+}
+const invY = (G, y) => G.yr[0] + ((G.h - PAD.b - y) / (G.h - PAD.t - PAD.b)) * (G.yr[1] - G.yr[0]);
+const invX = (G, x) => G.xr[0] + ((x - PAD.l) / (G.w - PAD.l - PAD.r)) * (G.xr[1] - G.xr[0]);
+hookTip("prof", "tip-prof", (x, y) => {
+  if (!profGeom) return null; const hk = invY(profGeom, y); if (hk < 0 || hk > 6 || x < PAD.l) return null;
+  const S = DATA.scenarios[scen]; const r = hk * 1000;
+  const zt = interp(DATA.profile.h, DATA.profile.dbz, r), zm = S.meas.dbz[Math.round(r / DATA.meta.delta_r)] ;
+  const md = interp(S.meas.r, S.meas.mdz, r);
+  return `${hk.toFixed(2)} km · true ${zt == null ? "–" : zt.toFixed(1)} · meas ${zm == null ? "–" : zm.toFixed(1)} · MDZ ${md.toFixed(1)} dBZ`;
+});
+hookTip("spec", "tip-spec", (x, y) => {
+  if (!specGeom) return null; const hk = invY(specGeom, y), v = invX(specGeom, x);
+  if (hk < 0 || hk > specGeom.rTop || v < specGeom.xr[0] || v > specGeom.xr[1]) return null;
+  const S = DATA.scenarios[scen]; const ri = Math.min(S.spec.n_r - 1, Math.round(hk * 1000 / DATA.meta.delta_r));
+  const vi = Math.min(S.spec.n_v - 1, Math.max(0, Math.round((v + DATA.meta.v_max) / (2 * DATA.meta.v_max) * S.spec.n_v)));
+  return `${hk.toFixed(2)} km · ${v.toFixed(1)} m/s · ${S.spec.db[ri * S.spec.n_v + vi]} dB above noise`;
+});
+hookTip("windc", "tip-wind", (x, y) => {
+  if (!windGeom) return null; const hk = invY(windGeom, y); if (hk < 0 || hk > 3 || x < PAD.l) return null;
+  const W = M.wind; let best = 0;
+  W.h.forEach((hh, k) => { if (Math.abs(hh / 1000 - hk) < Math.abs(W.h[best] / 1000 - hk)) best = k; });
+  const f = (v) => (v == null ? "–" : v.toFixed(1));
+  return `${(W.h[best] / 1000).toFixed(2)} km · u ${f(W.u[best])} (true ${f(W.u_true[best])}) · V ${f(W.V[best])} m/s`;
+});
+
+/* ------------------------------------------------------------------ labels projected from 3D */
+const hud = document.getElementById("hud");
+const tags = [];
+function addTag(text, pos3, color, side) {
+  const el = document.createElement("div"); el.className = "tag" + (side ? ` ${side}` : ""); el.textContent = text;
+  if (color) el.style.setProperty("--c", color);
+  hud.appendChild(el); tags.push({ el, pos3, color });
+}
+function buildTags() {
+  tags.forEach((t) => t.el.remove()); tags.length = 0;
+  // layer names sit 26 units to the camera's right of the column, so they follow the orbit
+  const side = new THREE.Vector3();
+  DATA.layers.forEach((L) => addTag(L.name, () => {
+    side.set(camera.position.x - controls.target.x, 0, camera.position.z - controls.target.z).normalize();
+    return new THREE.Vector3(side.z * 26, (L.r_bottom + L.r_top) / 2 / U, -side.x * 26);
+  }, layerColor(L), "left"));
+  addTag("TX array · 4 ch", () => board.localToWorld(new THREE.Vector3(-2.1, 0, 0.2)), css("--beam"), "to-left");
+  addTag("RX array · 4 ch", () => board.localToWorld(new THREE.Vector3(2.1, 0, 0.2)), css("--rx"), "left");
+  for (let km = 1; km <= 6; km++) addTag(`${km} km`, () => new THREE.Vector3(-50, km * 10, -30), null, "left");
+}
+const tmp = new THREE.Vector3();
+function placeTags() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const t of tags) {
+    tmp.copy(t.pos3()).project(camera);
+    const vis = tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1;
+    t.el.style.display = vis ? "" : "none";
+    if (vis) { t.el.style.left = `${(tmp.x * 0.5 + 0.5) * w}px`; t.el.style.top = `${(-tmp.y * 0.5 + 0.5) * h}px`; }
+  }
+}
+
+/* ------------------------------------------------------------------ theme */
+function applyTheme() {
+  ground.material.color.set(css("--ground"));
+  scene.fog = new THREE.Fog(css("--sky-bottom"), 150, 320);
+  coneMat.color.set(css("--beam")); axisMat.color.set(css("--beam"));
+  cacheColors();
+  waves.forEach((wv) => wv.mesh.material.color.copy(BEAMC));
+  boardMesh.material.color.set(css("--radar-body"));
+  rxPatches.forEach((p) => p.mesh.material.color.set(css("--rx")));
+  buildGrid(); buildScale(); paintClouds(); buildTags(); paintGates(); buildMimo(); drawCharts();
+}
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+
+/* ------------------------------------------------------------------ animation */
+const tWaves = document.getElementById("t-waves"), tEcho = document.getElementById("t-echo"),
+  tGates = document.getElementById("t-gates"), tAnim = document.getElementById("t-anim");
+if (reduceMotion) tAnim.checked = false;
+let last = performance.now(), phaseT = 0;
+function spawnEcho(r, strength, color) {
+  const e = echoPool.find((p) => !p.alive); if (!e) return;
+  e.alive = true; e.r = r; e.r0 = r; e.strength = strength; e.mesh.visible = true; e.mesh.material.color.set(color);
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const anim = tAnim.checked;
+  if (anim) {
+    phaseT += dt;
+    for (const c of clouds) {
+      if (!c.visible) continue;
+      const p = c.pos, fall = c.L.kind === "cloud" ? 0.05 : 0.35;
+      for (let k = 0; k < c.n; k++) {
+        let y = p[k * 3 + 1] - c.speed[k] * fall * dt;
+        if (y < c.y0) y = c.y1;
+        p[k * 3 + 1] = y;
+        if (c.L.kind === "snow") p[k * 3] += Math.sin(phaseT * 1.3 + k) * 0.01;
+      }
+      c.pts.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+  // phased mode: TX elements glow with their own phase (the progression across TX1..TX4 is the steering)
+  // MIMO mode: only the TX that sent the newest wavefront is lit (TDM)
+  let newest = waves[0];
+  for (const wv of waves) if (wv.r < newest.r) newest = wv;
+  for (const tp of txPatches) {
+    if (mimoOn) {
+      const c = TXC[tp.n], k = tp.n === newest.tx ? 0.95 : 0.06;
+      tp.mesh.material.emissive.setRGB(c.r * k, c.g * k, c.b * k);
+    } else {
+      const ph = THREE.MathUtils.degToRad(phaseOf(tp.n));
+      const b = 0.5 + 0.5 * Math.cos(phaseT * 6 + ph);
+      tp.mesh.material.emissive.setRGB(0.35 * b, 0.28 * b, 0.9 * b);
+    }
+  }
+  const showW = tWaves.checked;
+  for (const wv of waves) {
+    wv.prev = wv.r;
+    if (anim) wv.r += WAVE_SPEED * dt;
+    if (wv.r > L_MAX) { wv.r -= L_MAX; wv.prev = 0; }
+    wv.mesh.visible = showW;
+    wv.mesh.material.color.copy(mimoOn ? TXC[wv.tx] : BEAMC);
+    wv.mesh.scale.setScalar(Math.max(0.01, wv.r));
+    wv.mesh.material.opacity = 0.5 * Math.pow(1 - wv.r / L_MAX, 1.1);
+    if (anim && tEcho.checked) {
+      const seen = new Set();
+      for (const g of gates) {
+        const rr = g.r / U;
+        if (g.detected && g.layer >= 0 && clouds[g.layer].visible && !seen.has(g.layer) && wv.prev < rr && wv.r >= rr) {
+          seen.add(g.layer); spawnEcho(rr, Math.min(1, 0.25 + g.margin / 15), layerColor(DATA.layers[g.layer]));
+        }
+      }
+    }
+  }
+  for (const e of echoPool) {
+    if (!e.alive) continue;
+    if (anim) e.r -= WAVE_SPEED * dt;
+    if (e.r <= 0.3 || !tEcho.checked) { e.alive = false; e.mesh.visible = false; continue; }
+    e.mesh.scale.setScalar(e.r);
+    e.mesh.material.opacity = 0.55 * e.strength * (0.35 + 0.65 * (e.r / e.r0));
+  }
+  gates.forEach((g) => { g.mesh.visible = tGates.checked; });
+  controls.update();
+  renderer.render(scene, camera);
+  placeTags();
+  requestAnimationFrame(frame);
+}
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  drawCharts();
+}
+window.addEventListener("resize", resize);
+elIn.addEventListener("input", updateBeam);
+azIn.addEventListener("input", updateBeam);
+tMimo.addEventListener("change", () => {
+  mimoOn = tMimo.checked;
+  azIn.disabled = mimoOn;
+  if (mimoOn) azIn.value = 0;
+  updateBeam();
+});
+tFan.addEventListener("change", () => { if (fanMesh) fanMesh.visible = tFan.checked; });
+tWind.addEventListener("change", () => { windGroup.visible = tWind.checked; });
+
+cacheColors(); renderVA(); renderScenarioButtons(); renderFacts(); updateBeam(); applyTheme(); resize();
+requestAnimationFrame(frame);
+</script>

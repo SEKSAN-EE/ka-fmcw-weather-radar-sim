@@ -1,0 +1,25 @@
+# MIMO lab test: two corner reflectors at different angles, 4TX x 4RX TDM, with channel mismatch
+# so that the corner-reflector calibration step can be exercised.
+base: lab.yaml
+name: lab_mimo
+
+waveform:
+  n_chirps: 64            # 16 chirps per TX
+
+scene:
+  kind: point
+  point_targets:
+    - {name: "corner A", range_m: 1.0, rcs_dbsm: 5.0, velocity: 0.0, angle_deg: 0.0}
+    - {name: "corner B", range_m: 1.6, rcs_dbsm: 5.0, velocity: 0.0, angle_deg: 20.0}
+
+processing:
+  r_max: 4.0
+  clutter: none
+
+mimo:
+  enabled: true
+  tx_gain_err_db: 1.0     # (ASSUMPTION) channel mismatch before calibration
+  tx_phase_err_deg: 25.0
+  rx_gain_err_db: 1.0
+  rx_phase_err_deg: 25.0
+  max_angle_deg: 40.0

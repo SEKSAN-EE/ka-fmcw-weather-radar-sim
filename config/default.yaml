@@ -1,0 +1,80 @@
+# Ka-band FMCW weather radar (ZCU216) — default parameters.
+# Every value marked (ASSUMPTION) must be replaced by measured hardware values.
+name: default
+
+lo:
+  f_ref: 7.68e6
+  n_pll: 1119            # integer-N: 1119 x 7.68 MHz = 8.59392 GHz -> LO x4 = 34.37568 GHz
+                         # original plan 8.54 GHz ~ n_pll 1112 (8.54016 GHz) -> IF straddles zones
+  multiplier: 4
+  sideband: usb          # RF = LO + IF (ASSUMPTION: confirm with ADMV1013 I/Q wiring)
+
+waveform:
+  f_rf_center: 37.5e9
+  bandwidth: 10.0e6
+  t_chirp: 200.0e-6
+  t_idle: 0.0
+  n_chirps: 64
+
+adc:
+  fs: 2.5e9
+  bits: 14
+  full_scale_dbm: 1.0    # (ASSUMPTION) RFSoC Gen3 RF-ADC ~1 Vpp diff
+  nsd_dbfs_hz: -150.0    # (ASSUMPTION) check DS926 for the chosen fs / zone
+  jitter_rms: 0.0
+  ddc_decimation: 40
+  nco_freq: null         # null -> IF centre
+  analog_oversample: 4
+
+frontend:
+  pt_dbm: 20.0           # (ASSUMPTION) 0 dBm without PA, 20 dBm with PA
+  g_tx_dbi: 20.0
+  g_rx_dbi: 20.0
+  beamwidth_az_deg: 20.0
+  beamwidth_el_deg: 20.0
+  system_loss_db: 2.0
+  mixer_nf_db: 10.0      # (ASSUMPTION) ADMV1014 without external LNA
+  rx_gain_db: 20.0       # (ASSUMPTION) antenna -> ADC input conversion + IF gain
+  lna: {enabled: false, nf_db: 3.0, gain_db: 20.0}
+  iq_gain_imbalance_db: 0.5
+  iq_phase_imbalance_deg: 4.0     # -> ~27 dB image rejection
+  lo_leakage_dbm: -40.0
+  bpf_zone: null
+  bpf_guard_hz: 50.0e6
+
+channel:
+  tx_rx_isolation_db: 40.0        # (ASSUMPTION) measure it!
+  leakage_distance_m: 0.05
+  leakage_fluct_dbc: -60.0
+  elevation_deg: 90.0
+
+scene:
+  kind: rain
+  cells_per_bin: 4
+  attenuation: true
+  k_a: 0.263
+  k_b: 0.979
+  seed: 1
+  point_targets: []
+  rain_layers: []
+
+processing:
+  r_max: 6000.0
+  beat_decimation: null
+  range_window: hann
+  range_zero_pad: 1
+  clutter: mean
+  blank_m: 0.0
+  doppler_window: hann
+  snr_threshold_db: 0.0
+  noise_method: hs
+  attenuation_correction: true
+  zr_a: 200.0
+  zr_b: 1.6
+  unfold: false
+  unfold_direction: down
+  cal_offset_db: 0.0       # from scripts/calibrate_corner.py
+  range_offset_m: 0.0      # from scripts/calibrate_corner.py
+
+physics: {k2: 0.88, t0: 290.0}
+sim: {if_chirps: 2, add_noise: true, n_dwells: 1}

@@ -1,0 +1,613 @@
+<meta charset="utf-8">
+<title>Ka-Band Signal Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
+  svg: { fontCache: "global" },
+  options: { enableMenu: false }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async></script>
+<style>
+:root {
+  --bg: #f1f4f5;
+  --surface: #fcfcfb;
+  --plate: #fcfcfb;
+  --ink: #14202b;
+  --ink-2: #46545f;
+  --muted: #74828d;
+  --line: #d6dde2;
+  --accent: #4a3aa7;
+  --accent-soft: rgba(74, 58, 167, 0.08);
+  --in: #2a78d6;
+  --out: #1a8f65;
+  --warn: #b35a1f;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e151c; --surface: #141e27; --plate: #fcfcfb; --ink: #e6edf1; --ink-2: #a6b5c0; --muted: #7a8b98;
+    --line: #25333f; --accent: #9d93ee; --accent-soft: rgba(157, 147, 238, 0.10);
+    --in: #5ea2ee; --out: #3cc08f; --warn: #ef9460;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e151c; --surface: #141e27; --plate: #fcfcfb; --ink: #e6edf1; --ink-2: #a6b5c0; --muted: #7a8b98;
+  --line: #25333f; --accent: #9d93ee; --accent-soft: rgba(157, 147, 238, 0.10);
+  --in: #5ea2ee; --out: #3cc08f; --warn: #ef9460;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.7; }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 80px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 44px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 13px; line-height: 1.5; max-height: calc(100vh - 48px); overflow-y: auto; }
+nav.toc b { display: block; font: 600 12px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+nav.toc a { display: grid; grid-template-columns: 30px 1fr; color: var(--ink-2); text-decoration: none; padding: 2px 0; }
+nav.toc a span:first-child { font-family: var(--font-mono); color: var(--muted); }
+nav.toc a:hover { color: var(--accent); }
+main { min-width: 0; display: flex; flex-direction: column; gap: 56px; }
+header .eyebrow { font: 500 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.05; margin: 8px 0 14px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 26px; line-height: 1.2; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 600; font-size: 21px; line-height: 1.25; margin: 0; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+h3 .code { font: 500 14px var(--font-mono); color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 4px; }
+p { margin: 0; max-width: 68ch; }
+.lede { font-size: 18px; color: var(--ink-2); max-width: 64ch; }
+section.part { display: flex; flex-direction: column; gap: 40px; }
+.part-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+.part-head .eyebrow { font: 500 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+article.step { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 20px; }
+.io { display: grid; grid-template-columns: 76px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 14.5px; line-height: 1.55; }
+.io > div { padding: 9px 14px; border-top: 1px solid var(--line); }
+.io > div:nth-child(-n+2) { border-top: 0; }
+.io .k { font: 600 12px var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding-top: 11px; }
+.io .k.in { color: var(--in); } .io .k.how { color: var(--accent); } .io .k.out { color: var(--out); } .io .k.code { color: var(--muted); }
+.io code, p code, td code { font-family: var(--font-mono); font-size: .9em; }
+.eq { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 6px 18px; overflow-x: auto; }
+.eq .where { font-size: 14px; color: var(--ink-2); margin: 0 0 10px; max-width: none; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+figure .plate { background: var(--plate); border: 1px solid var(--line); border-radius: 8px; padding: 6px; overflow-x: auto; }
+figure img { display: block; width: 100%; height: auto; min-width: 640px; }
+figcaption { font-size: 14px; color: var(--ink-2); max-width: 78ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.nums { display: flex; flex-wrap: wrap; gap: 10px; }
+.num { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--surface); min-width: 150px; flex: 1 1 150px; }
+.num .v { font: 500 19px var(--font-mono); font-variant-numeric: tabular-nums; display: block; }
+.num .l { font-size: 12.5px; color: var(--muted); line-height: 1.35; display: block; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+thead th { border-top: 0; font: 600 12px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.callout { border-left: 3px solid var(--warn); padding: 4px 0 4px 16px; color: var(--ink); max-width: 70ch; }
+.callout b { color: var(--warn); }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 500 13px var(--font-mono); }
+.flow a { text-decoration: none; color: var(--ink); border: 1px solid var(--line); background: var(--surface); padding: 4px 9px; border-radius: 5px; }
+.flow a:hover { border-color: var(--accent); color: var(--accent); }
+.flow .arr { color: var(--muted); }
+.flow a:focus-visible, nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+mjx-container { color: var(--ink); }
+mjx-container[display="true"] { margin: 10px 0 !important; }
+@media (max-width: 900px) {
+  .page { grid-template-columns: 1fr; gap: 24px; }
+  nav.toc { display: none; }
+  .io { grid-template-columns: 1fr; }
+  .io > div:nth-child(2) { border-top: 0; }
+  .io .k { padding-bottom: 0; }
+  .io > div.k + div { border-top: 0; padding-top: 2px; }
+}
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="Contents">
+    <b>ภาพรวม</b>
+    <a href="#overview"><span>—</span><span>ข้อมูลในแต่ละขั้น</span></a>
+    <b>A · สัญญาณเข้า ADC</b>
+    <a href="#a1"><span>A1</span><span>แผนความถี่และ chirp</span></a>
+    <a href="#a2"><span>A2</span><span>echo ที่ antenna</span></a>
+    <a href="#a3"><span>A3</span><span>mixer + hybrid + noise</span></a>
+    <a href="#a4"><span>A4</span><span>หน้าตาสัญญาณที่ ADC</span></a>
+    <a href="#a5"><span>A5</span><span>sampling + quantization</span></a>
+    <a href="#a6"><span>A6</span><span>SNR ในแต่ละขั้น</span></a>
+    <b>B · Processing</b>
+    <a href="#p1"><span>P1</span><span>DDC</span></a>
+    <a href="#p2"><span>P2</span><span>Dechirp</span></a>
+    <a href="#p3"><span>P3</span><span>LPF + decimate</span></a>
+    <a href="#p4"><span>P4</span><span>Range FFT</span></a>
+    <a href="#p5"><span>P5</span><span>ตัด leakage</span></a>
+    <a href="#p6"><span>P6</span><span>Doppler + pulse-pair</span></a>
+    <a href="#p7"><span>P7</span><span>Noise + threshold</span></a>
+    <a href="#p8"><span>P8</span><span>Calibration → dBZ</span></a>
+    <a href="#p9"><span>P9</span><span>Attenuation correction</span></a>
+    <a href="#p10"><span>P10</span><span>Rain rate</span></a>
+    <a href="#p11"><span>P11</span><span>ตีความ spectrogram</span></a>
+    <b>C · MIMO (block 18)</b>
+    <a href="#c0"><span>C0</span><span>trade-off</span></a>
+    <a href="#c1"><span>C1</span><span>virtual array + TDM</span></a>
+    <a href="#c2"><span>C2</span><span>channel calibration</span></a>
+    <a href="#c3"><span>C3</span><span>Doppler + TDM comp.</span></a>
+    <a href="#c4"><span>C4</span><span>angle FFT</span></a>
+    <a href="#c5"><span>C5</span><span>moments ต่อ cell</span></a>
+    <a href="#c6"><span>C6</span><span>effective angle</span></a>
+    <a href="#c7"><span>C7</span><span>ลม (DBS)</span></a>
+    <a href="#c8"><span>C8</span><span>ขั้นต่อไป</span></a>
+    <b>สรุป</b>
+    <a href="#example"><span>—</span><span>ตัวอย่างที่ 1 km</span></a>
+  </nav>
+
+  <main>
+    <header>
+      <div class="eyebrow">ZCU216 · Ka-band FMCW · 37.5 GHz · weather mode</div>
+      <h1>Ka-Band Signal Chain</h1>
+      <p class="lede">อธิบายว่าสัญญาณที่เข้า RF-ADC หน้าตาเป็นอย่างไร ประกอบด้วยอะไรบ้าง แล้วแต่ละขั้นของ processing ทำอะไรกับมันด้วยสมการอะไร และให้ผลออกมาเป็นอะไร ตัวเลขและกราฟทั้งหมดมาจาก simulation จริงของโปรเจกต์นี้ (<code>config/weather.yaml</code>: B = 10 MHz, T = 200 µs, 64 chirps × 8 dwells, Pt 20 dBm, ฝนแบบ stratiform มองขึ้นฟ้าในแนวดิ่ง)</p>
+    </header>
+
+    <section id="overview" class="part">
+      <div class="part-head"><div class="eyebrow">ภาพรวม</div><h2>ข้อมูลในแต่ละขั้น</h2></div>
+      <div class="flow" aria-label="Processing chain">
+        <a href="#a5">ADC</a><span class="arr">→</span><a href="#p1">DDC</a><span class="arr">→</span><a href="#p2">dechirp</a><span class="arr">→</span><a href="#p3">LPF ↓10</a><span class="arr">→</span><a href="#p4">range FFT</a><span class="arr">→</span><a href="#p5">ตัด leakage</a><span class="arr">→</span><a href="#p6">Doppler / pulse-pair</a><span class="arr">→</span><a href="#p7">threshold</a><span class="arr">→</span><a href="#p8">Z</a><span class="arr">→</span><a href="#p9">แก้ attenuation</a><span class="arr">→</span><a href="#p10">R</a><span class="arr">·</span><a href="#partC">MIMO: angle FFT → ลม</a>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>ขั้น</th><th>สัญญาณ</th><th>ชนิด</th><th>อัตรา</th><th>ต่อ 1 chirp</th><th>หน่วย / ความหมาย</th></tr></thead>
+          <tbody>
+            <tr><td>ADC</td><td>\(x[n]\)</td><td>real, int16 (14 บิต)</td><td class="n">2.5 GS/s</td><td class="n">500,000</td><td>code ADC → mV ที่ขา ADC</td></tr>
+            <tr><td>P1 DDC</td><td>\(z[m]\)</td><td>complex I/Q</td><td class="n">62.5 MS/s</td><td class="n">12,500</td><td>chirp ที่ย้ายลงมาอยู่ baseband</td></tr>
+            <tr><td>P2–P3 dechirp + LPF</td><td>\(b[n]\)</td><td>complex</td><td class="n">6.25 MS/s</td><td class="n">1,250</td><td>ผลรวมของ tone: ความถี่ = ระยะ</td></tr>
+            <tr><td>P4 range FFT</td><td>\(X_m[k]\)</td><td>complex</td><td class="n">1 ค่า/bin/chirp</td><td class="n">401 bin (0–6 km)</td><td>ค่าเชิงซ้อนของแต่ละระยะ 15 m</td></tr>
+            <tr><td>P6 Doppler</td><td>\(S_k(v)\)</td><td>power</td><td class="n">1 ชุด/dwell</td><td class="n">401 × 64</td><td>กำลังตามระยะ × ความเร็ว</td></tr>
+            <tr><td>P6–P10 moments</td><td>\(Z, v, \sigma_v, R\)</td><td>real</td><td class="n">1 profile/0.1 s</td><td class="n">401</td><td>dBZ, m/s, mm/h ต่อความสูง</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>จะเห็นว่าข้อมูลลดลงจาก 500,000 ตัวอย่างต่อ chirp เหลือ 401 ค่า โดยที่ข้อมูลเกี่ยวกับฝนยังอยู่ครบ เพราะแต่ละขั้นตัดเฉพาะแถบความถี่ที่ไม่มีสัญญาณที่เราสนใจทิ้งไป และสิ่งนี้เองที่เพิ่ม SNR ขึ้นทีละขั้น (<a href="#a6">A6</a>)</p>
+    </section>
+
+    <!-- ================================================================= PART A -->
+    <section class="part" id="partA">
+      <div class="part-head"><div class="eyebrow">Part A</div><h2>สัญญาณที่เข้า ADC เกิดขึ้นอย่างไร และหน้าตาเป็นอย่างไร</h2>
+        <p>ADC ไม่ได้เห็น beat signal แบบเรดาร์ FMCW ทั่วไป มันเห็น chirp ที่ IF เต็มแถบ ซึ่งเป็นผลรวมของสามส่วน คือ TX leakage, echo จากฝน และ noise</p></div>
+
+      <article class="step" id="a1">
+        <h3><span class="code">A1</span>แผนความถี่และ chirp ที่ส่งออก</h3>
+        <div class="eq">
+          \[ f_{LO} = 4\,N f_{ref} = 4 \times 1119 \times 7.68\ \text{MHz} = 34.37568\ \text{GHz}, \qquad f_{RF}(t) = f_{LO} + f_{IF}(t) \]
+          \[ s(t) = e^{\,j\varphi(t)},\qquad \varphi(t) = \pi S t^2 - \pi B t,\qquad S = \frac{B}{T} = \frac{10\ \text{MHz}}{200\ \mu\text{s}} = 5\times10^{10}\ \text{Hz/s} \]
+          \[ u_{DAC}(t) = \cos\!\big(2\pi f_{IF}\,t + \varphi(t)\big),\qquad f_{IF} = 37.5\ \text{GHz} - f_{LO} = 3.12432\ \text{GHz} \]
+          <p class="where">\(s(t)\) คือ complex envelope ของ chirp (ความถี่ขณะหนึ่งกวาดจาก −B/2 ถึง +B/2) ทุกสมการด้านล่างเขียนในรูป envelope นี้ ส่วนความถี่พาหะจะแยกเขียนเป็น \(e^{j2\pi f t}\)</p>
+        </div>
+        <figure><div class="plate"><img src="img/01_waveform.png" alt="DAC waveform, instantaneous frequency and spectrogram of one chirp"></div>
+          <figcaption><b>ซ้าย:</b> DAC ส่ง cosine ที่ 3.124 GHz <b>กลาง:</b> ความถี่ RF ขึ้นเป็นเส้นตรง 37.495 → 37.505 GHz ทุก 200 µs (sawtooth) <b>ขวา:</b> spectrogram ของ chirp หนึ่งตัวที่ IF</figcaption></figure>
+      </article>
+
+      <article class="step" id="a2">
+        <h3><span class="code">A2</span>สิ่งที่ antenna RX ได้รับ</h3>
+        <div class="io">
+          <div class="k in">ส่วนที่ 1</div><div><b>TX leakage</b> เป็น chirp ที่รั่วตรงจาก antenna TX ไป RX ด้วย delay เกือบศูนย์ กำลัง = Pt/isolation = 20 − 40 = −20 dBm</div>
+          <div class="k in">ส่วนที่ 2</div><div><b>Echo จากฝน</b> คือ chirp เดียวกันแต่ delay ตามระยะ แต่ละเซลล์ของฝนมีแอมพลิจูดสุ่มและความเร็วของตัวเอง รวมทั้งหมดได้ประมาณ −89 dBm</div>
+          <div class="k in">ส่วนที่ 3</div><div><b>Noise</b> เกิดในวงจรรับเอง (ดู A3)</div>
+        </div>
+        <div class="eq">
+          \[ r(t) = \underbrace{a_L\, s(t-\tau_L)}_{\text{leakage}} \;+\; \sum_{c}\underbrace{a_c[m]\; e^{-j2\pi f_c \tau_c}\; s(t-\tau_c)\, e^{\,j2\pi f_{D,c} t}}_{\text{rain cell } c} ,\qquad \tau_c = \frac{2R_c}{c_0},\quad f_{D,c} = \frac{2v_c}{\lambda} \]
+          \[ |a_L|^2 = \frac{P_t}{\mathrm{ISO}},\qquad \mathrm{E}\,|a_c|^2 = \frac{P_t G_t G_r\,\theta\phi\,\pi^3 |K|^2 Z(R_c)\,\delta r}{512\ln 2\;\lambda^2 R_c^2 L}\;10^{-\mathrm{PIA}(R_c)/10} \]
+          <p class="where">สูตรที่สองคือ weather radar equation (Probert-Jones): กำลังจากฝนแปรตาม \(Z/R^2\) ไม่ใช่ \(1/R^4\) เพราะปริมาตรที่ลำคลื่นกวาดโตตาม \(R^2\) ส่วน \(a_c[m]\) เปลี่ยนจาก chirp ถึง chirp ตาม Doppler spectrum แบบ Gaussian (mean \(v\), width \(\sigma_v\)) โดยใช้วิธีของ Zrnić ส่วน PIA คือ attenuation สองทางจากฝนระหว่างทาง</p>
+        </div>
+        <figure><div class="plate"><img src="img/03_channel.png" alt="Leakage versus rain echo power in one chirp"></div>
+          <figcaption>Leakage (ส้ม) คงที่ −20 dBm ส่วน echo ฝน (น้ำเงิน) แกว่งอยู่แถว −90 dBm ห่างกัน <b>69 dB</b> ทั้งที่ทั้งคู่เป็น chirp เดียวกัน ต่างกันแค่ delay กับแอมพลิจูด</figcaption></figure>
+      </article>
+
+      <article class="step" id="a3">
+        <h3><span class="code">A3</span>Down-converter (ADMV1014), 90° hybrid และ noise</h3>
+        <div class="eq">
+          \[ z(t) = \sqrt{G}\; r(t)\, e^{\,j2\pi f_{IF} t} + n(t), \qquad z'(t) = \mu\, z(t) + \nu\, z^*(t), \qquad \mathrm{IRR} = \frac{|\mu|^2}{|\nu|^2} = 26.9\ \text{dB} \]
+          \[ y(t) = \sqrt{2}\;\operatorname{Re}\{\mathcal{P}_+\, z'(t)\} \quad(\text{image-reject hybrid: upper sideband only}) \]
+          \[ N_0 = k T_0\, F\, G + N_{0,ADC} \]
+          \[ = (-144.0\ \text{dBm/Hz}) \oplus (-149.0\ \text{dBm/Hz}) = -142.8\ \text{dBm/Hz} \;\Rightarrow\; F_{eff} = 11.2\ \text{dB} \]
+          <p class="where">\(G\) = gain จาก antenna ถึง ADC (สมมติ 20 dB), \(F\) = NF ของ mixer (สมมติ 10 dB), \(\mu,\nu\) มาจาก IQ imbalance 0.5 dB / 4° และ \(\mathcal{P}_+\) หมายถึงเก็บเฉพาะความถี่บวก noise ของ ADC (NSD −150 dBFS/Hz) บวกเข้ามาอีกทำให้ NF รวมเพิ่มขึ้น 1.2 dB</p>
+        </div>
+        <figure><div class="plate"><img src="img/04_downconverter.png" alt="Complex IF spectrum, image rejection test tones, real IF"></div>
+          <figcaption><b>ซ้าย:</b> I/Q จาก mixer มีสัญญาณที่ +f<sub>IF</sub> (sideband ที่ต้องการ) และ noise ทั้งสองฝั่ง <b>กลาง:</b> ทดสอบด้วย tone สองตัว tone ใน image band เหลือ −26.9 dB <b>ขวา:</b> real IF ที่ออกจาก hybrid มี chirp แคบ 10 MHz ที่ 3.124 GHz และ LO leakage ที่ DC</figcaption></figure>
+        <figure><div class="plate"><img src="img/05_noise.png" alt="Noise cascade and level diagram"></div>
+          <figcaption><b>Level diagram ที่ขา ADC:</b> full scale +1 dBm, leakage 0 dBm (headroom แค่ 1 dB), echo รวม −68 dBm, noise ในแถบ 10 MHz −73 dBm และ noise ต่อ range bin หลัง FFT −104 dBm</figcaption></figure>
+      </article>
+
+      <article class="step" id="a4">
+        <h3><span class="code">A4</span>หน้าตาของสัญญาณที่ขา ADC</h3>
+        <p>รวม A1–A3 แล้วผ่าน BPF ที่เลือก Nyquist zone 3 (2.5–3.75 GHz) จะได้สัญญาณแอนะล็อกที่ ADC รับจริง:</p>
+        <div class="eq">
+          \[ y(t) = \sqrt{2G}\;\operatorname{Re}\Big\{\Big[a_L\, s(t-\tau_L) + \sum_c a_c\, e^{-j2\pi f_c\tau_c}\, s(t-\tau_c)\Big]\, e^{\,j2\pi f_{IF} t}\Big\} + w(t) \]
+          <p class="where">กล่าวคือ ADC เห็นคลื่น cosine ที่ 3.124 GHz ความถี่เลื่อน ±5 MHz ตาม chirp แอมพลิจูดเกือบคงที่ 325 mV peak (มาจาก leakage) บนนั้นมี echo ฝนขนาดเล็กมากกับ noise ขี่อยู่ ใน time domain จึงแทบมองไม่เห็นฝนเลย</p>
+        </div>
+        <div class="nums">
+          <div class="num"><span class="v">325 mV pk</span><span class="l">TX leakage (0.2 dBm) = 7,508 LSB</span></div>
+          <div class="num"><span class="v">0.50 mV rms</span><span class="l">noise ทั้ง zone (−53 dBm) = 12 LSB</span></div>
+          <div class="num"><span class="v">0.083 mV rms</span><span class="l">echo ฝนทุกระดับรวมกัน (−68.6 dBm) = 1.9 LSB</span></div>
+          <div class="num"><span class="v">4.2 µV rms</span><span class="l">echo จาก bin 15 m ที่ 1 km (−94.6 dBm) = 0.1 LSB</span></div>
+        </div>
+        <figure><div class="plate"><img src="img/a1_adc_input_time.png" alt="Envelope of leakage, rain and noise; 4 ns zoom with ADC samples; samples tracing the alias"></div>
+          <figcaption><b>ซ้าย:</b> envelope ตลอด chirp 200 µs แยกเป็นส่วน ๆ leakage อยู่ใกล้ full scale ส่วนฝนต่ำกว่า noise รวมทั้ง zone 1.25 GHz ประมาณ 15 dB <b>กลาง:</b> ซูม 4 ns เส้นส้มคือคลื่นแอนะล็อก 3.124 GHz และจุดดำคือ sample ของ ADC ทุก 0.4 ns ซึ่งคลื่นเดินไป 1.25 รอบระหว่างสอง sample (undersampling) <b>ขวา:</b> sample ชุดเดียวกันเรียงเป็นคลื่น 624 MHz ได้พอดี นี่คือ alias ใน zone 1</figcaption></figure>
+        <figure><div class="plate"><img src="img/a2_adc_input_spectrum.png" alt="Power spectral density of each component at the ADC input"></div>
+          <figcaption>PSD แยกตามส่วนประกอบ: ในแถบ chirp 10 MHz leakage สูงกว่า noise ประมาณ 75 dB ส่วนฝนสูงกว่า noise เพียงไม่กี่ dB แต่ echo จากทุกความสูงใช้แถบ 10 MHz เดียวกัน (เป็น chirp ตัวเดียวกันที่ delay ต่างกันแค่ไม่กี่ µs) <b>ที่ ADC จึงแยกไม่ได้ว่าฝนอยู่ที่ระยะไหน</b> ต้องผ่าน dechirp + range FFT ก่อน echo ของแต่ละระยะถึงจะแยกออกมาได้</figcaption></figure>
+      </article>
+
+      <article class="step" id="a5">
+        <h3><span class="code">A5</span>RF-ADC: sampling ใน zone 3 และ quantization 14 บิต</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(y(t)\) แอนะล็อก ที่ 2.62–3.62 GHz (lab) หรือ 3.119–3.129 GHz (weather)</div>
+          <div class="k how">วิธี</div><div>sample ที่ \(f_s\) = 2.5 GS/s ซึ่งต่ำกว่า IF จงใจให้เกิด alias ลง zone 1 แล้ว quantize เป็น 14 บิต</div>
+          <div class="k out">ออก</div><div><code>int16</code> code ช่วง ±8192, 500,000 ตัวอย่างต่อ chirp (35 Gb/s ต่อช่อง) นี่คือ <b>raw IF data</b> ที่จะเก็บจาก ZCU216</div>
+        </div>
+        <div class="eq">
+          \[ x[n] = \mathcal{Q}\{\,y(n/f_s)\,\},\qquad \Delta = \frac{2A_{FS}}{2^{14}} = 43.3\ \mu\text{V} \]
+          \[ \text{SNR}_q = 6.02\times 14 + 1.76 = 86\ \text{dB} \]
+          \[ f_{alias} = f_{IF} - (z-1)\frac{f_s}{2} = 3.12432 - 2.5 = 0.62432\ \text{GHz}\qquad(z = 3,\ \text{odd zone: not inverted}) \]
+          <p class="where">zone ที่ \(z = \lfloor f_{IF}/(f_s/2)\rfloor + 1 = 3\) เป็น zone คี่ สเปกตรัมจึงไม่กลับด้าน ถ้า chirp คร่อมขอบ zone (เช่นใช้ PLL 8.54 GHz ในโหมด 1 GHz) ส่วนที่ล้นเข้า zone 4 จะพับกลับด้านมาทับกัน</p>
+        </div>
+        <figure><div class="plate"><img src="img/07_adc.png" alt="ADC spectrum folded into zone 1, zone map, code histogram"></div>
+          <figcaption>สเปกตรัมหลัง sampling ย้ายมาอยู่ที่ 624 MHz ± 5 MHz, zone map และ histogram ของ code (ใช้แค่ ±7,500 จาก ±8,192 เพราะ leakage)</figcaption></figure>
+        <figure><div class="plate"><img src="img/a3_adc_codes.png" alt="First 80 ADC codes and LSB budget of each signal component"></div>
+          <figcaption><b>นี่คือข้อมูลดิบที่ได้จาก ADC:</b> code เกือบทั้งหมดถูกใช้ไปกับ leakage ส่วน echo ฝนจาก 1 bin มีขนาดแค่ <b>0.1 LSB</b> ที่ยังกู้คืนได้เพราะ noise (12 LSB rms) ทำหน้าที่เป็น dither และ processing ที่ตามมาเฉลี่ยตัวอย่างเป็นแสนตัว</figcaption></figure>
+        <div class="callout"><b>ข้อสังเกตสำคัญ</b> ถ้า leakage แรงกว่านี้อีก 1 dB ADC จะ clip ทันที และ clipping ของสัญญาณที่แรงที่สุดจะสร้าง harmonic ที่กลบฝนทั้งหมด การวัด TX–RX isolation จริงจึงเป็นงานแรกที่ต้องทำ</div>
+      </article>
+
+      <article class="step" id="a6">
+        <h3><span class="code">A6</span>SNR ของฝน 1 bin ในแต่ละขั้น</h3>
+        <p>ติดตาม echo จาก bin 15 m ที่ 1 km (−94.6 dBm ที่ ADC) ผ่านทุกขั้น ทุกขั้นที่แคบแถบลงช่วยตัด noise ออก สัญญาณจึงค่อย ๆ โผล่ขึ้นจาก noise</p>
+        <div class="eq">
+          \[ \text{SNR}_i = \frac{P_{bin}}{N_0\, B_{n,i}},\qquad B_{n}:\ 1.25\ \text{GHz} \to 54\ \text{MHz} \to 4.6\ \text{MHz} \to \frac{\text{ENBW}}{T} = 7.5\ \text{kHz} \]
+        </div>
+        <figure><div class="plate"><img src="img/a4_snr_budget.png" alt="SNR of one range bin through the processing stages"></div>
+          <figcaption>จาก <b>−42.8 dB</b> ที่ ADC ขึ้นเป็น <b>+9.5 dB</b> หลัง range FFT (simulation วัดได้ +8.4 dB) และขึ้นเป็น +16.8 dB ที่ยอด Doppler spectrum เมื่อเฉลี่ย 8 dwell ส่วนที่เพิ่มมากที่สุด (+28 dB) มาจาก range FFT ซึ่งเป็น coherent integration ตลอด chirp 200 µs</figcaption></figure>
+      </article>
+    </section>
+
+    <!-- ================================================================= PART B -->
+    <section class="part" id="partB">
+      <div class="part-head"><div class="eyebrow">Part B</div><h2>Processing ทีละขั้น: วิธี สมการ และผลลัพธ์</h2>
+        <p>โค้ดส่วนนี้ใช้ร่วมกันระหว่าง simulation กับข้อมูลจริง (<code>radar_sim/processing/</code>) ขั้น P1 อาจทำใน DDC ของ RFSoC หรือในซอฟต์แวร์ก็ได้ ขั้นอื่นทำใน FPGA หรือ PC</p></div>
+
+      <article class="step" id="p1">
+        <h3><span class="code">P1</span>DDC: ย้าย chirp ลง baseband แล้วลดอัตรา</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(x[n]\) real, 2.5 GS/s, 500,000 ตัว/chirp</div>
+          <div class="k how">วิธี</div><div>คูณด้วย NCO \(e^{-j2\pi f_{NCO} n/f_s}\) ที่ \(f_{NCO} = f_{IF}\) แล้วกรอง low-pass (FIR 961 tap) และ decimate ×40</div>
+          <div class="k out">ออก</div><div>\(z[m]\) complex I/Q, 62.5 MS/s, 12,500 ตัว/chirp มี chirp ที่กวาด −5 → +5 MHz รอบ DC</div>
+          <div class="k code">โค้ด</div><div><code>radar_sim/adc.py: ddc()</code>, <code>io/capture.py: ddc_stream()</code></div>
+        </div>
+        <div class="eq">
+          \[ z[m] = \sqrt{2}\sum_{l} h[l]\; x[mD-l]\; e^{-j2\pi f_{NCO}(mD-l)/f_s},\qquad D = 40 \]
+          \[ z(t) \approx \mu\sqrt{G}\,\Big[a_L\,s(t-\tau_L) + \sum_c a_c\, e^{-j2\pi f_c\tau_c}\, s(t-\tau_c)\Big]\,e^{\,j2\pi\Delta f\,t} + w(t),\qquad \Delta f = f_{IF}-f_{NCO} \]
+          <p class="where">ค่า \(\sqrt{2}\) ทำให้กำลังของ complex เท่ากับกำลังของ real (\(|z|^2 = P\)) หลัง DDC เราได้ complex envelope กลับคืนมาครบ ทั้ง phase และ amplitude ซึ่งเป็นสิ่งที่ Doppler ต้องใช้</p>
+        </div>
+        <figure><div class="plate"><img src="img/b1_ddc_iq.png" alt="DDC I and Q in the first 2 microseconds and the instantaneous frequency"></div>
+          <figcaption><b>ซ้าย:</b> I กับ Q ห่างกัน 90° เป็น sinusoid ที่ −5 MHz ตอนเริ่ม chirp <b>ขวา:</b> ความถี่ที่คำนวณจาก phase slope กวาดเป็นเส้นตรง −5 → +5 MHz ใน 200 µs</figcaption></figure>
+        <figure><div class="plate"><img src="img/08_ddc.png" alt="DDC output spectrum and decimation filter"></div>
+          <figcaption>สเปกตรัมหลัง DDC (แถบเขียว = chirp 10 MHz) และ response ของ decimation filter อัตราข้อมูลลดจาก 35 Gb/s เหลือ 2 Gb/s</figcaption></figure>
+        <figure><div class="plate"><img src="img/08b_if_vs_baseband.png" alt="IF path versus baseband model after the DDC"></div>
+          <figcaption>การตรวจสอบ: ผลจาก IF path เต็มรูป (10 GS/s → ADC → DDC) ตรงกับ complex-baseband model ที่ NMSE −93 dB ดังนั้น chirp ส่วนใหญ่ใน simulation จึงใช้ baseband model ได้เลย</figcaption></figure>
+      </article>
+
+      <article class="step" id="p2">
+        <h3><span class="code">P2</span>Digital dechirp: เปลี่ยน delay ให้เป็นความถี่</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(z_m(t)\) ของ chirp ที่ \(m\) (12,500 ตัว) และ reference chirp \(s_{ref}(t)\) ที่สร้างในซอฟต์แวร์</div>
+          <div class="k how">วิธี</div><div>คูณ reference กับ conjugate ของสัญญาณรับทีละตัวอย่าง (ทำหน้าที่เหมือน mixer ของ FMCW แบบแอนะล็อก แต่ทำแบบดิจิทัล)</div>
+          <div class="k out">ออก</div><div>\(b_m(t)\) ผลรวมของ tone หนึ่ง tone ต่อหนึ่งระยะ ความถี่ \(f_b = S\tau\) เช่น 1 km → 334 kHz, 5 km → 1.67 MHz</div>
+          <div class="k code">โค้ด</div><div><code>processing/dechirp.py: dechirp()</code></div>
+        </div>
+        <div class="eq">
+          \[ s_{ref}(t) = s(t)\,e^{\,j2\pi\Delta f\, t},\qquad b_m(t) = s_{ref}(t)\; z_m^*(t) \]
+          \[ \varphi(t) - \varphi(t-\tau) = 2\pi S\tau\, t - \pi S\tau^2 - \pi B\tau \]
+          \[ b_m(t) \approx \sum_c |a_c|\, \exp\!\Big(j\big[\,2\pi \underbrace{(S\tau_c - f_{D,c})}_{f_{b,c}}\, t + \underbrace{2\pi f_c \tau_c - \arg a_c}_{\phi_{c,m}}\big]\Big) \]
+          \[ f_b = \frac{2SR}{c_0} - \frac{2v}{\lambda},\qquad \Delta\phi_{m\to m+1} = -\frac{4\pi v T}{\lambda} \]
+          <p class="where">ความถี่ของ tone บอกระยะ และ phase ที่เปลี่ยนจาก chirp ถึง chirp บอกความเร็ว (ใช้ใน P6) พจน์ \(-2v/\lambda\) คือ range–Doppler coupling ที่ 6 m/s ทำให้ระยะเพี้ยนประมาณ 4.5 m (0.3 bin) \(\Delta f\) ใน reference ต้องตรงกับ offset ของ NCO ไม่เช่นนั้นทุก tone จะเลื่อน</p>
+        </div>
+        <figure><div class="plate"><img src="img/b2_fmcw_tf.png" alt="Time-frequency picture of TX and delayed echoes, and the resulting beat tones"></div>
+          <figcaption><b>ซ้าย:</b> echo คือ chirp ที่เลื่อนไปทางขวาด้วย τ ในทุกขณะความถี่ห่างจาก reference เท่ากับ Sτ <b>ขวา:</b> หลัง dechirp แต่ละระยะกลายเป็น tone ความถี่คงที่ ช่วง τ แรกของแต่ละ chirp เป็นหางของ chirp ก่อนหน้าซึ่งไปอยู่นอกแถบ และจะถูกกรองทิ้งใน P3 (เสีย SNR เล็กน้อยที่ระยะไกล: 0.43 dB ที่ 6 km เมื่อใช้ Hann window)</figcaption></figure>
+        <figure><div class="plate"><img src="img/09_dechirp.png" alt="Beat spectrogram of chirp 0 and beat frequency versus range"></div>
+          <figcaption>Spectrogram ของ beat จาก chirp แรกของฉากฝนจริง แถบพลังงานอยู่ที่ 0–1 MHz (ฝน 0–3 km) และ leakage อยู่ที่ ~0 Hz</figcaption></figure>
+      </article>
+
+      <article class="step" id="p3">
+        <h3><span class="code">P3</span>Low-pass + decimate ×10</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(b_m\) ที่ 62.5 MS/s</div>
+          <div class="k how">วิธี</div><div>FIR low-pass cutoff = 1.25 × f<sub>b,max</sub> = 2.5 MHz (f<sub>b,max</sub> ของ 6 km) แล้วเก็บทุกตัวที่ 10</div>
+          <div class="k out">ออก</div><div>\(b'_m[n]\) ที่ 6.25 MS/s, 1,250 ตัว/chirp ตัด noise นอกแถบ beat ทิ้ง (SNR +10.7 dB)</div>
+          <div class="k code">โค้ด</div><div><code>processing/dechirp.py: beat_decimate()</code></div>
+        </div>
+        <div class="eq">
+          \[ b'_m[n] = \sum_l h_b[l]\; b_m[nD_2 - l],\qquad D_2 = 10,\qquad f_{s,beat} = 6.25\ \text{MS/s} \ge 2.5\,f_{b,max},\quad f_{b,max} = S\,\frac{2R_{max}}{c_0} = 2.0\ \text{MHz} \]
+        </div>
+        <figure><div class="plate"><img src="img/10_beat_lpf.png" alt="Beat spectrum before and after the low-pass filter"></div>
+          <figcaption>เทาคือก่อนกรอง (62.5 MS/s) น้ำเงินคือหลังกรองและลดอัตรา เส้นประคือ response ของ filter</figcaption></figure>
+      </article>
+
+      <article class="step" id="p4">
+        <h3><span class="code">P4</span>Range FFT: แยก tone ออกเป็น range bin</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(b'_m[n]\) 1,250 ตัวต่อ chirp</div>
+          <div class="k how">วิธี</div><div>คูณ Hann window แล้วทำ FFT โดย normalize ด้วย \(\sum w\) เพื่อให้ tone ที่มีกำลัง P ได้ \(|X|^2 = P\) พอดี</div>
+          <div class="k out">ออก</div><div>\(X_m[k]\) ค่าเชิงซ้อน 401 bin (0–6 km, bin ละ 15 m) ต่อ chirp เรียงเป็น range–chirp matrix 64 × 401 ต่อ dwell</div>
+          <div class="k code">โค้ด</div><div><code>processing/range_fft.py</code></div>
+        </div>
+        <div class="eq">
+          \[ X_m[k] = \frac{1}{\sum_n w[n]}\sum_{n=0}^{N-1} w[n]\, b'_m[n]\, e^{-j2\pi kn/N},\qquad R_k = \frac{k\, f_{s,beat}}{N}\cdot\frac{c_0}{2S} = k\,\Delta R,\qquad \Delta R = \frac{c_0}{2B} = 15.0\ \text{m} \]
+          \[ N_{bin} = N_0\,\frac{\text{ENBW}}{T},\qquad \text{ENBW}_{Hann} = 1.5 \;\Rightarrow\; N_{bin} = -142.8 + 10\log_{10}(7500) = -104.0\ \text{dBm} \]
+          <p class="where">tone ที่อยู่นิ่งตลอด chirp มีพลังงานรวมกันแบบ coherent ใน bin เดียว ขณะที่ noise กระจายไปทุก bin ขั้นนี้จึงให้ gain มากที่สุด (+28 dB)</p>
+        </div>
+        <figure><div class="plate"><img src="img/b3_dechirp_demo.png" alt="Beat signal and range profile for three point targets"></div>
+          <figcaption>ตัวอย่างที่เห็นง่าย: เป้า 3 จุดที่ 1, 2.5, 4 km ใน time domain beat เป็นผลรวมของ 3 tone (ซ้าย) และ FFT แยกออกเป็น 3 peak ที่ระยะถูกต้อง (ขวา)</figcaption></figure>
+        <figure><div class="plate"><img src="img/11_range_fft.png" alt="Range profile and range-chirp matrix of the rain scene"></div>
+          <figcaption>ฉากฝนจริง: range profile ของแต่ละ chirp และ range–chirp matrix ฝนเห็นชัดที่ 0–2.5 km แต่ leakage ที่ 0 m แรงกว่ามาก</figcaption></figure>
+      </article>
+
+      <article class="step" id="p5">
+        <h3><span class="code">P5</span>ตัด TX leakage และ clutter ที่อยู่นิ่ง</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>range–chirp matrix \(X_m[k]\)</div>
+          <div class="k how">วิธี</div><div>ลบค่าเฉลี่ยตามแกน chirp ออก (zero-Doppler notch) ทุกอย่างที่ไม่เปลี่ยนระหว่าง chirp จะหายไป ได้แก่ leakage, radome และ ground clutter</div>
+          <div class="k out">ออก</div><div>\(\tilde X_m[k]\) ขนาดเดิม เหลือแค่สิ่งที่เคลื่อนที่</div>
+        </div>
+        <div class="eq">
+          \[ \tilde X_m[k] = X_m[k] - \frac{1}{M}\sum_{m'=0}^{M-1} X_{m'}[k] \]
+          <p class="where">ข้อจำกัด: เป้าที่ความเร็วใกล้ 0 (เช่น เมฆที่แทบไม่ตก) ถูกตัดไปด้วยบางส่วน และส่วนที่ leakage แกว่งระหว่าง chirp (สมมติ −60 dBc) จะเหลือค้างเป็น residual</p>
+        </div>
+        <figure><div class="plate"><img src="img/12_clutter_removal.png" alt="Range profile before and after mean subtraction"></div>
+          <figcaption>ก่อนลบ (เทา) sidelobe ของ leakage ท่วมระยะใกล้ หลังลบ (น้ำเงิน) เหลือแต่ฝน</figcaption></figure>
+      </article>
+
+      <article class="step" id="p6">
+        <h3><span class="code">P6</span>Doppler processing: FFT และ pulse-pair ต่อ range bin</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(\tilde X_m[k]\) ของ bin \(k\) ใน 64 chirp (slow time, ห่างกัน T = 200 µs)</div>
+          <div class="k how">วิธี</div><div>(ก) FFT ตามแกน chirp ได้ Doppler spectrum แล้วเฉลี่ย 8 dwell (ข) pulse-pair: autocorrelation lag 0 และ lag 1</div>
+          <div class="k out">ออก</div><div>range–Doppler map 401 × 64 และต่อ bin ได้ \(R_0, R_1\) → กำลัง, \(v\), \(\sigma_v\)</div>
+          <div class="k code">โค้ด</div><div><code>processing/doppler.py</code></div>
+        </div>
+        <div class="eq">
+          \[ S_k(f_i) = \frac{\big|\sum_m w_m \tilde X_m[k]\, e^{-j2\pi i m/M}\big|^2}{M\sum_m w_m^2},\qquad v_i = -\frac{\lambda f_i}{2},\qquad v_{max} = \frac{\lambda}{4T} = 9.99\ \text{m/s} \]
+          \[ R_0 = \frac{1}{M}\sum_m |\tilde X_m|^2,\qquad R_1 = \frac{1}{M-1}\sum_m \tilde X_{m+1}\tilde X_m^* \]
+          \[ \hat v = -\frac{\lambda}{4\pi T}\arg R_1,\qquad \hat\sigma_v = \frac{\lambda}{2\sqrt{2}\,\pi T}\sqrt{\ln\frac{\hat S}{|R_1|}},\qquad \hat S = R_0 - \hat N \]
+          <p class="where">phase ที่หมุนระหว่าง chirp บอกความเร็วเฉลี่ย และการที่ \(|R_1|\) น้อยกว่า \(S\) (สัญญาณ decorrelate) บอกความกว้างของ spectrum ถ้าความเร็วเกิน ±v<sub>max</sub> phase จะหมุนเกิน ±180° และค่าที่ได้จะกลับฝั่ง (velocity aliasing)</p>
+        </div>
+        <figure><div class="plate"><img src="img/b4_slow_time.png" alt="Slow-time samples of the 1 km bin, phasor plot, and its Doppler spectrum"></div>
+          <figcaption>bin ที่ 1 km: <b>ซ้าย</b> ค่า I/Q ของ bin เดียวกันใน 64 chirp ดูเหมือนสุ่มเพราะเป็นผลรวมของเม็ดฝนจำนวนมาก (Rayleigh) ข้อมูลจึงอยู่ในสถิติ ไม่ได้อยู่ในค่าเดี่ยว ๆ <b>กลาง</b> phasor หมุนเฉลี่ย −119° ต่อ chirp (ลูกศร \(R_1\)) <b>ขวา</b> Doppler spectrum ยอดอยู่ที่ 6–7 m/s: pulse-pair ได้ 6.62 m/s เทียบกับค่าจริง 6.70 m/s</figcaption></figure>
+        <figure><div class="plate"><img src="img/13_doppler.png" alt="Range-Doppler map and velocity and width profiles"></div>
+          <figcaption>ทุก bin พร้อมกัน: range–Doppler map, ความเร็วเฉลี่ย และ spectrum width เทียบกับค่าจริง (เส้นดำ)</figcaption></figure>
+      </article>
+
+      <article class="step" id="p7">
+        <h3><span class="code">P7</span>ประมาณ noise และคัด bin ที่เชื่อถือได้</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>Doppler spectrum และ \(R_0\) ของทุก bin</div>
+          <div class="k how">วิธี</div><div>Hildebrand–Sekhon: เรียงจุดใน spectrum จากน้อยไปมาก แล้วหาส่วนที่ยังมีสถิติแบบ noise ขาว จากนั้นใช้ median ข้ามทุก bin</div>
+          <div class="k out">ออก</div><div>\(\hat N\) (−104.2 dBm เทียบกับทฤษฎี −104.0), SNR ต่อ bin และ mask ของ bin ที่ valid</div>
+        </div>
+        <div class="eq">
+          \[ \hat N = \operatorname{mean}\{S_{(1..n^*)}\},\quad n^* = \max\big\{n : p\cdot\operatorname{var}\{S_{(1..n)}\} \le \operatorname{mean}\{S_{(1..n)}\}^2\big\} \]
+          \[ \text{SNR}_k = \frac{R_0[k]-\hat N}{\hat N} \ge \gamma = -6\ \text{dB} \]
+          <p class="where">threshold −6 dB ใช้ได้เพราะเฉลี่ย 8 × 64 chirp ทำให้ค่า noise ที่ประมาณได้แกว่งน้อยกว่า −13 dB</p>
+        </div>
+        <figure><div class="plate"><img src="img/14_detection.png" alt="SNR profile, threshold and noise estimates"></div>
+          <figcaption>SNR ต่อ bin (ซ้าย แถบเขียวคือ valid) และ noise ที่ประมาณได้เทียบกับทฤษฎี (ขวา)</figcaption></figure>
+      </article>
+
+      <article class="step" id="p8">
+        <h3><span class="code">P8</span>Calibration: จากกำลังใน bin เป็น reflectivity (dBZ)</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(\hat S\) กำลังฝนใน bin (W ที่ขา ADC)</div>
+          <div class="k how">วิธี</div><div>กลับสมการ radar แบบ weather (A2) โดยหาร gain ของสายรับ คูณ \(R^2\) และชดเชยความยาว bin ที่มีผลจริงของ window</div>
+          <div class="k out">ออก</div><div>\(Z\) (mm⁶/m³) และ dBZ ต่อ bin</div>
+          <div class="k code">โค้ด</div><div><code>processing/calibration.py: reflectivity()</code></div>
+        </div>
+        <div class="eq">
+          \[ Z = C\;R^2\;\frac{\hat S}{G\,L_{ov}(R)}\;10^{\,\text{cal}/10},\qquad C = \frac{512\ln 2\;\lambda^2 L}{P_t G_t G_r\,\theta\phi\,\pi^3|K|^2\,\Delta R_{eff}} \]
+          \[ \Delta R_{eff} = \text{ENBW}\cdot\frac{c_0}{2B} = 1.5\times 15 = 22.5\ \text{m},\qquad L_{ov}(R) = \Big(\frac{\sum_{n\ge n_\tau} w_n}{\sum_n w_n}\Big)^2,\quad n_\tau = \tau f_{s,beat} \]
+          <p class="where">\(\Delta R_{eff}\) ใหญ่กว่า 15 m เพราะ window ทำให้แต่ละ bin รับฝนจากช่วงที่กว้างกว่า bin ส่วน \(L_{ov}\) ชดเชยช่วง τ แรกที่ไม่มี beat (P2) ค่า <code>cal</code> ได้จากการ calibrate ด้วย corner reflector</p>
+        </div>
+        <figure><div class="plate"><img src="img/15_reflectivity.png" alt="Measured reflectivity versus truth and error versus SNR"></div>
+          <figcaption>Z ที่วัดได้ (จุด) เทียบกับค่าจริง (ดำ) และค่าที่คาดหวังหลัง attenuation (ประส้ม) เส้นจุดเทาคือ minimum detectable Z ขวามือคือ error: bias −0.14 dB, std 0.77 dB</figcaption></figure>
+      </article>
+
+      <article class="step" id="p9">
+        <h3><span class="code">P9</span>แก้ attenuation ของ Ka-band (Hitschfeld–Bordan)</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(Z_m(R)\) ที่ถูกฝนระหว่างทางดูดกลืนไปแล้ว</div>
+          <div class="k how">วิธี</div><div>สะสม attenuation จากระยะใกล้ออกไป โดยใช้ความสัมพันธ์ k–Z</div>
+          <div class="k out">ออก</div><div>\(Z_c(R)\) และ PIA (dB) ตามระยะ เช่น ที่ 1 km PIA = 2.5 dB</div>
+        </div>
+        <div class="eq">
+          \[ k = \alpha Z^{\beta}\ \text{[dB/km]},\quad \alpha = a_k\, a^{-b_k/b},\ \beta = \frac{b_k}{b};\qquad Z_c(R) = \frac{Z_m(R)}{\big[1 - 0.46\,\beta\alpha\int_0^R Z_m^{\beta}(s)\,ds\big]^{1/\beta}} \]
+          <p class="where">\(k = 0.263 R^{0.979}\) ที่ ~37 GHz และ \(Z = 200R^{1.6}\) วิธีนี้ไม่เสถียรเมื่อ attenuation สูง จึงจำกัดการแก้ไว้ไม่เกิน 10 dB</p>
+        </div>
+        <figure><div class="plate"><img src="img/16_attenuation.png" alt="Reflectivity before and after attenuation correction and path-integrated attenuation"></div>
+          <figcaption>Z ก่อนและหลังแก้ (ซ้าย) และ PIA ที่ประมาณได้เทียบกับค่าจริง (ขวา)</figcaption></figure>
+      </article>
+
+      <article class="step" id="p10">
+        <h3><span class="code">P10</span>Rain rate</h3>
+        <div class="eq">
+          \[ R = \Big(\frac{Z}{a}\Big)^{1/b},\qquad a = 200,\ b = 1.6\ \ (\text{Marshall–Palmer}) \]
+        </div>
+        <figure><div class="plate"><img src="img/17_rain_rate.png" alt="Estimated rain rate versus truth"></div>
+          <figcaption>ใช้ได้เฉพาะชั้นฝนที่เป็นน้ำ (ใต้ melting layer) ที่ 1 km ได้ 4.6 mm/h</figcaption></figure>
+      </article>
+
+      <article class="step" id="p11">
+        <h3><span class="code">P11</span>ตีความ Doppler spectrogram</h3>
+        <p>นำ Doppler spectrum ของทุก bin มาวางเรียงตามความสูงจะได้ภาพที่อ่านโครงสร้างของเมฆฝนได้โดยตรง: ฝนตก 6–7 m/s และ spectrum กว้าง, bright band คือจุดที่ความเร็วกระโดดจาก ~1.5 เป็น ~6 m/s และ Z มียอด, ส่วนหิมะตกช้าราว 1 m/s</p>
+        <figure><div class="plate"><img src="img/18_spectrogram_interpretation.png" alt="Annotated Doppler spectrogram of the vertically pointing radar"></div>
+          <figcaption>ที่ Pt 20 dBm โดยไม่มี LNA ตรวจพบฝนและ bright band แต่หิมะและเมฆ altostratus ต่ำกว่า minimum detectable Z</figcaption></figure>
+      </article>
+    </section>
+
+    <!-- ================================================================= PART C -->
+    <section class="part" id="partC">
+      <div class="part-head"><div class="eyebrow">Part C · Block 18</div><h2>MIMO: angle FFT และสิ่งที่ทำต่อหลังจากนั้น</h2>
+        <p>ในส่วน A–B ใช้ RX ช่องเดียว ส่วนนี้ใช้ครบทั้ง 4 TX × 4 RX เพื่อแยกทิศทาง (angle) ภายในลำคลื่น 20° ของแต่ละ sub-array ตัวเลขมาจาก <code>config/weather_mimo.yaml</code> (ฝนเดิม มีลมพัดตามแกน x 2 → 9 m/s) และ <code>config/lab_mimo.yaml</code> (corner reflector 2 ตัว)</p></div>
+
+      <article class="step" id="c0">
+        <h3><span class="code">C0</span>ก่อนเริ่ม: ต้องแลกอะไรไปบ้าง</h3>
+        <div class="nums">
+          <div class="num"><span class="v">±2.5 m/s</span><span class="l">v<sub>max</sub> ถ้าใช้ TDM กับ chirp 200 µs (แต่ละ TX ส่งทุก 800 µs) ฝนที่ตก 6–7 m/s จะ alias</span></div>
+          <div class="num"><span class="v">50 µs</span><span class="l">chirp ที่ใช้ในโหมด MIMO ทำให้แต่ละ TX ส่งทุก 200 µs และได้ v<sub>max</sub> ±10 m/s กลับมา แลกกับ r<sub>max</sub> ที่ลดเหลือ 3 km</span></div>
+          <div class="num"><span class="v">7–11°</span><span class="l">ความละเอียดเชิงมุมของ virtual array 16 ตัว (aperture 8λ) ภายใน beam 20° จึงได้ประมาณ 3 cell อิสระ</span></div>
+        </div>
+        <div class="eq">
+          \[ v_{max}^{TDM} = \frac{\lambda}{4\,N_{tx}\,T},\qquad \Delta(\sin\theta) \approx \frac{\text{ENBW}}{N_v\, d/\lambda} = \frac{1.5}{16\times 0.5} \;\Rightarrow\; \Delta\theta \approx 11^\circ\ (\text{Hann}) \]
+          <p class="where">ประโยชน์หลักของ MIMO สำหรับเรดาร์ตรวจฝนแบบชี้ขึ้นจึงไม่ใช่ภาพที่คมขึ้น แต่คือการได้ radial velocity ที่หลายมุมพร้อมกัน ซึ่งเอาไปคำนวณลมแนวนอนได้ (C7)</p>
+        </div>
+      </article>
+
+      <article class="step" id="c1">
+        <h3><span class="code">C1</span>Virtual array และลำดับ TDM</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>ADC 4 ช่อง (RX0–RX3) ทุก chirp โดย chirp ที่ \(m\) ส่งจาก TX \(t = m \bmod 4\)</div>
+          <div class="k how">วิธี</div><div>ทำ P1–P4 (DDC, dechirp, LPF, range FFT) แยกทีละ RX แล้วจัดกลุ่ม chirp ตาม TX ที่ส่ง</div>
+          <div class="k out">ออก</div><div>\(X_v[q, v, k]\): 64 slow-time × 16 virtual element × 201 range bin ต่อ dwell</div>
+          <div class="k code">โค้ด</div><div><code>radar_sim/mimo.py</code>, <code>processing/mimo.py: mimo_profiles(), to_virtual()</code></div>
+        </div>
+        <div class="eq">
+          \[ x_v = x_{t} + x_{r},\quad x_t = 2t\ [\lambda],\ x_r = 0.5r\ [\lambda] \;\Rightarrow\; x_v = 0.5\,(4t + r),\qquad v = 4t + r = 0,\dots,15 \]
+          \[ \tau_{t,r}(\theta) = \frac{2R - (x_t + x_r)\lambda\sin\theta}{c_0} \;\Rightarrow\; X_m[r,k] \propto e^{-j2\pi (x_t + x_r)\sin\theta},\qquad X_v[q, v, k] = X_{qN_{tx}+t}[r, k] \]
+          <p class="where">เพราะ TX ห่างกัน 2λ = 4 × ระยะห่าง RX ผลรวมตำแหน่ง TX+RX จึงเรียงเป็น array 16 ตัวที่ห่างกัน λ/2 พอดี phase ที่ต่างกันระหว่าง element เป็นเส้นตรงตาม \(\sin\theta\) (หลัง dechirp เครื่องหมายกลับเป็นลบเพราะมี conjugate)</p>
+        </div>
+        <figure><div class="plate"><img src="img/m1_array_tdm_weather.png" alt="TX, RX and virtual element positions, and TDM timing"></div>
+          <figcaption><b>ซ้าย:</b> TX 4 ตัว (□), RX 4 ตัว (○) และ virtual element 16 ตัว (◇) สีบอกว่ามาจาก TX ตัวไหน <b>ขวา:</b> TDM: TX ผลัดกันส่งทีละ chirp ขนาด 50 µs แต่ละตัวจึงส่งซ้ำทุก 200 µs</figcaption></figure>
+      </article>
+
+      <article class="step" id="c2">
+        <h3><span class="code">C2</span>Channel calibration ด้วย corner reflector</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(X_v\) จาก capture ที่มี corner reflector วางที่มุมที่รู้ค่า (เช่น 0°)</div>
+          <div class="k how">วิธี</div><div>หาร phase และ gain ที่ควรเป็นตามทฤษฎีออก ส่วนที่เหลือคือ mismatch ของแต่ละช่อง (สาย, mixer, ADC) จากนั้นหารค่านี้ออกจากทุก capture</div>
+          <div class="k out">ออก</div><div>\(c_v\) ค่าเชิงซ้อน 16 ค่า เก็บเป็น <code>*_cal.npy</code> หรือ <code>mimo.calibration</code> ใน config</div>
+          <div class="k code">โค้ด</div><div><code>scripts/calibrate_mimo.py</code>, <code>processing/mimo.py: estimate_calibration()</code></div>
+        </div>
+        <div class="eq">
+          \[ c_v = \frac{\overline{X_v[k_0]}}{\overline{X_0[k_0]}\; a_v(\theta_0)},\qquad a_v(\theta) = e^{-j2\pi x_v \sin\theta},\qquad \tilde X_v = X_v / c_v \]
+          <p class="where">ถ้าไม่ calibrate ความผิดพลาดของ phase ±25° ต่อช่องจะทำให้เกิด sidelobe สูงถึง −7 dB และเกิดเป้าปลอม หลัง calibrate ค่าที่ประมาณได้ต่างจากค่าจริงไม่เกิน 3° ต้อง calibrate ใหม่เมื่อเปลี่ยนสาย อุณหภูมิเปลี่ยน หรือ reset PLL</p>
+        </div>
+        <figure><div class="plate"><img src="img/m2_lab_range_angle.png" alt="Range-angle maps of two corner reflectors before and after calibration"></div>
+          <figcaption>Corner A (1.0 m, 0°) และ corner B (1.6 m, +20°) <b>ซ้าย</b> ก่อน calibrate มี lobe ปลอมกระจายเต็มแถว <b>กลาง</b> หลัง calibrate เหลือ 2 จุดที่ตำแหน่งถูกต้อง (0.0° และ 20.1°) <b>ขวา</b> angle cut ที่ 1.6 m</figcaption></figure>
+      </article>
+
+      <article class="step" id="c3">
+        <h3><span class="code">C3</span>Doppler FFT และชดเชยการเคลื่อนที่ระหว่าง TX (TDM compensation)</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(\tilde X_v[q, k]\) หลังลบค่าเฉลี่ย (ตัด leakage)</div>
+          <div class="k how">วิธี</div><div>FFT ตามแกน \(q\) แล้วหมุน phase ของ element ที่มาจาก TX \(t\) กลับด้วย Doppler ของ bin นั้น เพราะ TX \(t\) ส่งช้ากว่า TX0 อยู่ \(tT\) ซึ่งระหว่างนั้นเม็ดฝนเคลื่อนที่ไปแล้ว</div>
+          <div class="k out">ออก</div><div>\(D[f, v, k]\) ที่ phase ของทุก element อ้างอิงเวลาเดียวกัน</div>
+        </div>
+        <div class="eq">
+          \[ D[f_i, v, k] = e^{-j2\pi f_i\, t_v T}\sum_{q} w_q\,\tilde X_v[q,k]\, e^{-j2\pi f_i q N_{tx} T},\qquad t_v = \lfloor v / N_{rx}\rfloor \]
+          <p class="where">ถ้าไม่ชดเชย phase error \(2\pi f_D t T\) จะทำให้มุมเพี้ยนตามความเร็ว ในการทดสอบ เป้าที่ 10° ความเร็ว ±7 m/s: ชดเชยแล้วได้ 10.8° (ความละเอียดของ grid 1.8°) ถ้าไม่ชดเชยได้ 12.6° / 7.2° ถ้า Doppler alias การชดเชยจะผิดไปด้วย จึงต้องเลือก chirp ให้ v<sub>max</sub> พอ</p>
+        </div>
+      </article>
+
+      <article class="step" id="c4">
+        <h3><span class="code">C4</span>Angle FFT</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(D[f, v, k]\) 16 element</div>
+          <div class="k how">วิธี</div><div>คูณ Hann window ตามแกน element แล้วทำ FFT 64 จุด (zero-pad) แกนผลลัพธ์เป็น \(\sin\theta\)</div>
+          <div class="k out">ออก</div><div>\(P[f, \theta, k]\) กำลังตาม Doppler × มุม × ระยะ (64 Doppler × 64 angle bin ครอบคลุม −90° ถึง +76° × 201 range bin)</div>
+        </div>
+        <div class="eq">
+          \[ A[f,\theta_n,k] = \frac{1}{\sum_v w_v}\sum_{v=0}^{15} w_v\, D[f,v,k]\; e^{+j2\pi v n / N_\theta},\qquad \sin\theta_n = \frac{n/N_\theta}{d/\lambda} = 2\,\frac{n}{N_\theta} \]
+          \[ P[f,\theta,k] = \frac{|A[f,\theta,k]|^2}{Q\sum_q w_q^2} \]
+        </div>
+      </article>
+
+      <article class="step" id="c5">
+        <h3><span class="code">C5</span>Moments และ Z ในแต่ละ cell (ระยะ × มุม)</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(P[f,\theta,k]\) เฉลี่ย 8 dwell</div>
+          <div class="k how">วิธี</div><div>ได้ autocorrelation จาก spectrum (Wiener–Khinchin) จากนั้นใช้สูตร pulse-pair ชุดเดิม และแก้ Z ด้วย element pattern กับความกว้างของ angle bin</div>
+          <div class="k out">ออก</div><div>SNR, dBZ, \(v_r\), \(\sigma_v\) ต่อ cell ในระนาบแนวดิ่ง: \(x = R\sin\theta\), \(h = R\cos\theta\)</div>
+        </div>
+        <div class="eq">
+          \[ R_0 = \sum_f P,\qquad R_1 = \sum_f P\, e^{\,j2\pi f N_{tx}T},\qquad \hat v_r = -\frac{\lambda}{4\pi N_{tx}T}\arg R_1 \]
+          \[ Z(\theta) = Z_{beam}\big(\hat S\big)\cdot \frac{\theta_b\sqrt{\pi/(8\ln 2)}}{f^4(\theta)\;\Delta\theta_{eff}},\qquad \Delta\theta_{eff} = \frac{\text{ENBW}}{N_v\,(d/\lambda)\cos\theta},\qquad f^4(\theta) = e^{-8\ln 2\,\theta^2/\theta_b^2} \]
+          <p class="where">\(Z_{beam}\) คือสูตร P8 เดิม (ที่ถือว่ากำลังมาจากทั้ง beam) พจน์ที่เพิ่มเข้ามาเปลี่ยนเป็นกำลังจาก angle bin เดียว และชดเชยการที่ขอบ beam มี gain ต่ำกว่า</p>
+        </div>
+        <figure><div class="plate"><img src="img/m3_range_angle_sector.png" alt="SNR, reflectivity and radial-velocity anomaly in the vertical plane"></div>
+          <figcaption>ข้อมูลเป็นรูปพัดในระนาบแนวดิ่ง <b>ซ้าย</b> SNR (ขอบพัดต่ำเพราะ element pattern) <b>กลาง</b> dBZ หลังแก้ pattern (สม่ำเสมอข้ามมุม ตามที่ควร) <b>ขวา</b> \(v_r\) ลบค่าเฉลี่ยข้ามมุม: ฝั่งซ้ายเข้าหาเรดาร์เร็วกว่า ฝั่งขวาช้ากว่า นี่คือสัญญาณของลมที่พัดไปทาง +x</figcaption></figure>
+      </article>
+
+      <article class="step" id="c6">
+        <h3><span class="code">C6</span>มุมที่มีผลจริง (effective angle)</h3>
+        <p>angle bin ที่ขอบ beam (เช่น 18°) ไม่ได้รับกำลังจาก 18° จริง เพราะ element pattern ที่ 18° ต่ำกว่า boresight ถึง −24 dB และ sidelobe ของ array ดึงกำลังจากกลาง beam เข้ามา ความเร็วที่วัดได้ใน bin นั้นจึงเป็นของมุมที่ใกล้ 0° กว่า ถ้าใช้มุมของ bin ตรง ๆ ลมจะออกมาต่ำกว่าจริงประมาณ 30%</p>
+        <div class="eq">
+          \[ \theta_{eff,n} = \frac{\int \theta\, f^4(\theta)\,|H_n(\theta)|^2\, d\theta}{\int f^4(\theta)\,|H_n(\theta)|^2\, d\theta},\qquad H_n(\theta) = \frac{1}{\sum w}\sum_v w_v\, e^{\,j2\pi x_v(\sin\theta - \sin\theta_n)} \]
+          <p class="where">ผลคือ bin ±18.2° มีมุมจริง ±12.3° และ bin ±9.0° มีมุมจริง ±6.1° (ถือว่า Z สม่ำเสมอข้าม beam ที่ระยะเดียวกัน) ทดสอบกับฝนที่ไม่มี noise แล้ว θ<sub>eff</sub> ตรงกับค่าที่คำนวณจาก cell ของฝนจริงภายใน 0.7°</p>
+        </div>
+      </article>
+
+      <article class="step" id="c7">
+        <h3><span class="code">C7</span>หาลมแนวนอนและความเร็วตก (Doppler beam swinging)</h3>
+        <div class="io">
+          <div class="k in">เข้า</div><div>\(v_r(\theta_{eff}, k)\) ของ cell ที่ valid</div>
+          <div class="k how">วิธี</div><div>fit least squares (ถ่วงน้ำหนักด้วย SNR) รวม 7 range gate (105 m) ต่อครั้ง</div>
+          <div class="k out">ออก</div><div>\(u(h)\) ลมแนวนอนตามแกน array และ \(V(h)\) ความเร็วตกรวมกับลมแนวดิ่ง</div>
+          <div class="k code">โค้ด</div><div><code>processing/mimo.py: retrieve_wind()</code>, <code>scripts/run_mimo.py</code></div>
+        </div>
+        <div class="eq">
+          \[ v_r(\theta) = V\cos\theta - u\sin\theta \quad\Rightarrow\quad \begin{bmatrix}\hat V\\ \hat u\end{bmatrix} = \arg\min \sum_i \frac{\text{SNR}_i}{1+\text{SNR}_i}\Big(v_{r,i} - V\cos\theta_i + u\sin\theta_i\Big)^2 \]
+          <p class="where">\(V\) = ความเร็วตกของเม็ดฝน + ลมแนวดิ่ง (สองอย่างนี้แยกกันไม่ได้ด้วยเรดาร์ตัวเดียว) ความไวต่อ noise ของ \(u\) สูงเพราะ \(\sin\theta_{eff}\) มีค่าแค่ ≤ 0.2 จึงต้องเฉลี่ยข้ามหลาย gate และหลาย dwell เช่นเดียวกับ wind profiler ทั่วไป</p>
+        </div>
+        <figure><div class="plate"><img src="img/m4_angle_cut_dbs.png" alt="Doppler spectrum per angle, power versus angle, and the DBS fit at 1 km"></div>
+          <figcaption>ที่ 1 km: <b>ซ้าย</b> Doppler spectrum ของแต่ละ angle bin (ยอดเลื่อนจาก 7.5 → 5.8 m/s ตามมุม) <b>กลาง</b> SNR ตามมุมเทียบกับ element pattern <b>ขวา</b> \(v_r\) ที่มุมของ bin (เทา) กับที่ θ<sub>eff</sub> (น้ำเงิน) fit ได้ u = 5.01 m/s (ค่าจริง 5.0)</figcaption></figure>
+        <figure><div class="plate"><img src="img/m5_wind_profile.png" alt="Retrieved wind and fall-speed profiles versus truth"></div>
+          <figcaption>Profile ทั้งหมด: u RMSE 0.67 m/s เมื่อ fit รวม 7 gate (1.28 m/s ถ้า fit gate เดียว) และ V RMSE 0.05 m/s ถ้าไม่ calibrate u RMSE เพิ่มเป็น 0.75 m/s (config นี้มี mismatch เพียง 0.5 dB / 10°)</figcaption></figure>
+      </article>
+
+      <article class="step" id="c8">
+        <h3><span class="code">C8</span>ขั้นต่อไปหลังจากนี้</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>งาน</th><th>ได้อะไร</th><th>ต้องมีอะไร</th></tr></thead>
+            <tbody>
+              <tr><td>Calibrate กับฮาร์ดแวร์จริง</td><td>\(c_v\) 16 ค่า และ element pattern \(f(\theta)\) จริงที่ใช้ใน C5–C6</td><td>corner reflector บนแท่นหมุนหรือวางหลายมุม</td></tr>
+              <tr><td>เฉลี่ยนานขึ้น (30 s – 5 min)</td><td>u RMSE ต่ำกว่า 0.3 m/s และตรวจจับหิมะได้</td><td>เก็บ capture ต่อเนื่อง หรือทำ P1–P4 ใน FPGA</td></tr>
+              <tr><td>Array แกนที่สอง หรือหมุนเรดาร์ 90°</td><td>ลมครบทั้ง u และ v (ทิศและความเร็วลม)</td><td>array 2 มิติ หรือวัดสองรอบ</td></tr>
+              <tr><td>ชี้เอียงแล้วหมุน (VAD / PPI / RHI)</td><td>ภาพฝนแบบ 3 มิติ และลมจาก VAD</td><td>แท่นหมุน (mechanical scan)</td></tr>
+              <tr><td>DDMA แทน TDM</td><td>ส่งทุก TX พร้อมกัน ได้ SNR เต็ม แต่ต้องแบ่งช่วง Doppler</td><td>phase code ต่อ chirp ที่ DAC</td></tr>
+              <tr><td>ใช้ \(\sigma_v\) ตามมุม</td><td>turbulence และ wind shear ในลำคลื่น</td><td>SNR สูงหรือเฉลี่ยนาน</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="part" id="example">
+      <div class="part-head"><div class="eyebrow">สรุป</div><h2>ตามตัวเลขของ bin ที่ 1.00 km ตลอดสาย</h2></div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>ขั้น</th><th>ปริมาณ</th><th>ค่า</th><th>มาจาก</th></tr></thead>
+          <tbody>
+            <tr><td>A4</td><td>echo ของ bin นี้ที่ขา ADC</td><td class="n">−94.6 dBm = 4.2 µV rms = 0.10 LSB</td><td>weather radar equation</td></tr>
+            <tr><td>A6</td><td>SNR ที่ ADC (ทั้ง zone)</td><td class="n">−42.8 dB</td><td>\(P_{bin}/(N_0 \cdot 1.25\ \text{GHz})\)</td></tr>
+            <tr><td>P2</td><td>beat frequency</td><td class="n">334 kHz</td><td>\(2SR/c_0\)</td></tr>
+            <tr><td>P4</td><td>\(R_0\) หลัง range FFT</td><td class="n">−95.2 dBm</td><td>สัญญาณ + noise</td></tr>
+            <tr><td>P7</td><td>noise \(\hat N\)</td><td class="n">−104.2 dBm</td><td>Hildebrand–Sekhon</td></tr>
+            <tr><td>P7</td><td>\(\hat S = R_0 - \hat N\), SNR</td><td class="n">−95.7 dBm, +8.4 dB</td><td></td></tr>
+            <tr><td>P6</td><td>\(\arg R_1\) → \(\hat v\)</td><td class="n">−119.3° → 6.62 m/s (จริง 6.70)</td><td>\(-\lambda\arg R_1/(4\pi T)\)</td></tr>
+            <tr><td>P6</td><td>\(|R_1|/\hat S\) → \(\hat\sigma_v\)</td><td class="n">0.90 → 1.43 m/s (จริง 1.32)</td><td></td></tr>
+            <tr><td>P8</td><td>\(\hat S / G\) (ที่ antenna)</td><td class="n">−115.7 dBm</td><td>\(G\) = 20 dB</td></tr>
+            <tr><td>P8</td><td>\(10\log C + 10\log R^2\)</td><td class="n">116.8 + 60.0 dB</td><td>\(\Delta R_{eff}\) = 22.5 m</td></tr>
+            <tr><td>P8</td><td>Z ที่วัดได้</td><td class="n">31.1 dBZ (คาดหวัง 32.3)</td><td>−145.7 + 116.8 + 60.0 dB</td></tr>
+            <tr><td>P9</td><td>PIA และ Z หลังแก้</td><td class="n">2.5 dB → 33.6 dBZ (จริง 34.9)</td><td>Hitschfeld–Bordan</td></tr>
+            <tr><td>P10</td><td>rain rate</td><td class="n">4.6 mm/h</td><td>\(Z = 200R^{1.6}\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ค่าตัวเลขและกราฟทั้งหมดสร้างใหม่ได้ด้วย <code>python scripts/signal_walkthrough.py</code> และ <code>python scripts/run_pipeline.py --config config/weather.yaml</code> ค่า gain, NF, isolation และ ADC full scale ยังเป็นสมมติฐาน (ดู <code>config/default.yaml</code>) เมื่อมีข้อมูลจริง ตัวเลขในส่วน A จะเปลี่ยน แต่สมการทั้งหมดยังคงเหมือนเดิม</p>
+    </section>
+  </main>
+</div>

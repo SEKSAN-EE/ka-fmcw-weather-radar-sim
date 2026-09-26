@@ -1,0 +1,14 @@
+# Same atmosphere as weather.yaml, but with an external LNA (NF 3 dB, G 20 dB) in front of the
+# ADMV1014 and ~0.4 s of spectral averaging: shows what it takes to see snow and cloud.
+base: weather.yaml
+name: weather_lna
+
+frontend:
+  lna: {enabled: true, nf_db: 3.0, gain_db: 20.0}
+  rx_gain_db: 0.0          # keep the total gain to the ADC at 20 dB (leakage headroom unchanged)
+
+processing:
+  snr_threshold_db: -10.0
+
+sim:
+  n_dwells: 32

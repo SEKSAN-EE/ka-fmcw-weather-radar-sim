@@ -1,0 +1,22 @@
+# Weather mode: vertically pointing, stratiform rain with bright band and cloud layers.
+# Range == height because elevation is 90 deg.
+base: default.yaml
+name: weather
+
+scene:
+  kind: rain
+  rain_layers:
+    - {name: "Rain",            kind: rain,    r_bottom: 150,  r_top: 2400, dbz_bottom: 36, dbz_top: 33,
+       v_bottom: 7.0, v_top: 6.2, sw_bottom: 1.4, sw_top: 1.2, att_scale: 1.0}
+    - {name: "Melting layer",   kind: melting, r_bottom: 2400, r_top: 2750, dbz_bottom: 33, dbz_top: 25,
+       dbz_peak: 38, v_bottom: 6.2, v_top: 1.6, sw_bottom: 1.2, sw_top: 0.6, att_scale: 1.5}
+    - {name: "Snow / ice",      kind: snow,    r_bottom: 2750, r_top: 4300, dbz_bottom: 25, dbz_top: 12,
+       v_bottom: 1.5, v_top: 0.9, sw_bottom: 0.5, sw_top: 0.4, att_scale: 0.05}
+    - {name: "Altostratus",     kind: cloud,   r_bottom: 4900, r_top: 5500, dbz_bottom: -2, dbz_top: -8,
+       v_bottom: 0.6, v_top: 0.4, sw_bottom: 0.3, sw_top: 0.3, att_scale: 0.0}
+
+processing:
+  snr_threshold_db: -6.0   # with 8 x 64 chirps averaged, -6 dB is still well above the noise-estimate spread
+
+sim:
+  n_dwells: 8              # 8 dwells x 12.8 ms ~ 0.1 s of spectral averaging
