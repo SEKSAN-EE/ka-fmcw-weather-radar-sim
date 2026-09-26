@@ -1,0 +1,117 @@
+<meta charset="utf-8">
+<title>Ka-Band Weather Radar Sim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f1f4f5;
+  --surface: #fcfcfb;
+  --ink: #14202b;
+  --ink-2: #46545f;
+  --muted: #74828d;
+  --line: #d6dde2;
+  --accent: #4a3aa7;
+  --accent-soft: rgba(74, 58, 167, 0.08);
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e151c; --surface: #141e27; --ink: #e6edf1; --ink-2: #a6b5c0; --muted: #7a8b98;
+    --line: #25333f; --accent: #9d93ee; --accent-soft: rgba(157, 147, 238, 0.10);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e151c; --surface: #141e27; --ink: #e6edf1; --ink-2: #a6b5c0; --muted: #7a8b98;
+  --line: #25333f; --accent: #9d93ee; --accent-soft: rgba(157, 147, 238, 0.10);
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.65; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 64px; display: flex; flex-direction: column; gap: 44px; }
+.eyebrow { font: 500 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(32px, 5vw, 52px); line-height: 1.05; margin: 10px 0 14px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 12px; }
+.lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0; }
+.chain { font: 13px var(--font-mono); color: var(--muted); margin-top: 16px; max-width: 80ch; line-height: 1.7; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+a.card { display: flex; flex-direction: column; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: border-color .15s, transform .15s; }
+a.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.thumb { aspect-ratio: 16 / 8; max-width: 100%; background: #fcfcfb; border-bottom: 1px solid var(--line); overflow: hidden; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; object-position: left top; display: block; }
+.card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.card-body h3 { font-family: var(--font-display); font-weight: 600; font-size: 22px; margin: 0; }
+.card-body p { margin: 0; color: var(--ink-2); font-size: 15px; }
+.go { margin-top: auto; padding-top: 8px; font: 500 14px var(--font-mono); color: var(--accent); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.stat b { display: block; font: 500 20px var(--font-mono); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); line-height: 1.4; display: block; }
+.links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; }
+.links a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); padding: 8px 0; display: flex; justify-content: space-between; gap: 12px; }
+.links a:hover { color: var(--accent); border-color: var(--accent); }
+.links a span { color: var(--muted); font: 13px var(--font-mono); white-space: nowrap; }
+.note { font-size: 13.5px; color: var(--muted); max-width: 80ch; margin: 0; }
+code { font-family: var(--font-mono); font-size: .92em; }
+@media (max-width: 760px) {
+  .cards, .links { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { a.card { transition: none; } a.card:hover { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">ZCU216 RFSoC · Ka-band FMCW · 37.5 GHz · weather radar</div>
+    <h1>Ka-Band Weather Radar Simulation</h1>
+    <p class="lede">Simulation ของสายรับทั้งหมด ตั้งแต่ echo จากฝนที่ antenna ไปจนถึง reflectivity, ความเร็ว, rain rate และลมแนวนอนจาก MIMO พร้อมเส้นทางสำหรับประมวลผลข้อมูลจริงจาก ZCU216</p>
+    <div class="chain">chirp → rain / cloud scene → TX leakage → ADMV1014 + hybrid → noise → BPF → 14-bit ADC → DDC → dechirp → range FFT → Doppler / pulse-pair → dBZ → attenuation → rain rate → MIMO angle FFT → wind</div>
+  </header>
+
+  <section>
+    <h2>เปิดดู</h2>
+    <div class="cards">
+      <a class="card" href="signal-chain/">
+        <div class="thumb"><img src="img/a1_adc_input_time.png" alt="Signal at the ADC input: envelope, 4 ns zoom with samples, and the alias"></div>
+        <div class="card-body">
+          <h3>Signal Chain</h3>
+          <p>สัญญาณที่เข้า ADC หน้าตาเป็นอย่างไร แต่ละขั้นของ processing ทำอะไร ใช้สมการอะไร และให้ผลออกมาเป็นอะไร รวมถึง MIMO และการหาลม</p>
+          <span class="go">อ่าน →</span>
+        </div>
+      </a>
+      <a class="card" href="radar-3d/">
+        <div class="thumb"><img src="img/m3_range_angle_sector.png" alt="Range by angle cells above the radar with the wind signature"></div>
+        <div class="card-body">
+          <h3>3D View</h3>
+          <p>เรดาร์, ลำคลื่นแบบ phased array หรือ TDM-MIMO, ชั้นฝน / bright band / หิมะ / เมฆ และชั้นที่ตรวจเจอได้จริง ปรับมุม elevation, steering และเปิดโหมด MIMO ได้</p>
+          <span class="go">เปิด →</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>ผลการตรวจสอบ (simulation)</h2>
+    <div class="stats">
+      <div class="stat"><b>1.049 m</b><span>peak ของ corner reflector ที่ 1.00 m (bin 15 cm)</span></div>
+      <div class="stat"><b>−93 dB</b><span>IF path เทียบ baseband model หลัง DDC (NMSE)</span></div>
+      <div class="stat"><b>0.77 dB</b><span>std ของ Z ในฝน, bias −0.14 dB</span></div>
+      <div class="stat"><b>0.67 m/s</b><span>RMSE ของลมแนวนอนจาก MIMO (105 m, 0.1 s)</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>เอกสารและโค้ด</h2>
+    <div class="links">
+      <a href="https://github.com/SEKSAN-EE/ka-fmcw-weather-radar-sim">Repository และ README <span>GitHub</span></a>
+      <a href="https://github.com/SEKSAN-EE/ka-fmcw-weather-radar-sim/blob/main/docs/brief.md">โจทย์ตั้งต้น (brief) <span>docs/brief.md</span></a>
+      <a href="https://github.com/SEKSAN-EE/ka-fmcw-weather-radar-sim/blob/main/docs/real_data.md">การใช้ข้อมูลจริงจาก ZCU216 <span>docs/real_data.md</span></a>
+      <a href="https://github.com/SEKSAN-EE/ka-fmcw-weather-radar-sim/blob/main/notebooks/walkthrough.ipynb">ไล่โค้ดทีละ block <span>notebook</span></a>
+    </div>
+  </section>
+
+  <p class="note">ค่า Pt, NF, gain, TX–RX isolation, ADC full scale, sideband และรูปแบบ MIMO ยังเป็นสมมติฐาน (ดู <code>config/default.yaml</code>) ตัวเลขจะเปลี่ยนเมื่อแทนด้วยค่าที่วัดจากฮาร์ดแวร์ แต่สมการและขั้นตอนทั้งหมดยังเหมือนเดิม</p>
+</div>

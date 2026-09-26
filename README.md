@@ -3,17 +3,21 @@
 Simulation แบบ end-to-end ของสายรับ (RX) ตาม [brief](docs/brief.md) ตั้งแต่สัญญาณสะท้อนจากฝนที่ antenna → ADMV1014 + 90° hybrid → BPF → RF-ADC ของ ZCU216 → DDC → digital dechirp → range/Doppler → Z, v, σv, rain rate → MIMO angle FFT → ลม
 ทุก block เป็นฟังก์ชันแยกและมีกราฟของตัวเอง ส่วน processing (block 8–18) ใช้กับไฟล์ข้อมูลจริงจาก ZCU216 ได้โดยไม่ต้องแก้โค้ด
 
+**เว็บไซต์ของโปรเจกต์ (กดเปิดได้เลย): https://seksan-ee.github.io/ka-fmcw-weather-radar-sim/**
+- Signal chain พร้อมสมการ: https://seksan-ee.github.io/ka-fmcw-weather-radar-sim/signal-chain/
+- 3D view: https://seksan-ee.github.io/ka-fmcw-weather-radar-sim/radar-3d/
+
 ## เริ่มอ่านจากตรงไหน
 
 | อยากรู้ | เปิด |
 |---|---|
-| สัญญาณที่ ADC หน้าตาเป็นอย่างไร และแต่ละขั้นทำอะไร (มีสมการ) | [`docs/signal_chain/index.html`](docs/signal_chain/index.html) (ดาวน์โหลดแล้วเปิดใน browser) |
-| ภาพ 3D ของเรดาร์ ลำคลื่น ชั้นเมฆ และ MIMO | [`viz/radar_3d.html`](viz/radar_3d.html) (ดาวน์โหลดแล้วเปิดใน browser) |
+| สัญญาณที่ ADC หน้าตาเป็นอย่างไร และแต่ละขั้นทำอะไร (มีสมการ) | [Signal chain](https://seksan-ee.github.io/ka-fmcw-weather-radar-sim/signal-chain/) (source: `docs/signal_chain/index.html`) |
+| ภาพ 3D ของเรดาร์ ลำคลื่น ชั้นเมฆ และ MIMO | [3D view](https://seksan-ee.github.io/ka-fmcw-weather-radar-sim/radar-3d/) (source: `viz/radar_3d.html`) |
 | โจทย์ตั้งต้น | [`docs/brief.md`](docs/brief.md) |
 | จะเอาข้อมูลจริงจาก ZCU216 มาใช้ | [`docs/real_data.md`](docs/real_data.md) |
 | ไล่โค้ดทีละ block | [`notebooks/walkthrough.ipynb`](notebooks/walkthrough.ipynb) |
 
-ทั้งสองหน้า HTML โหลด three.js / MathJax / ฟอนต์จาก CDN จึงต้องต่ออินเทอร์เน็ต
+เว็บไซต์ build และ deploy อัตโนมัติทุกครั้งที่ push เข้า `main` (`.github/workflows/pages.yml` → `scripts/build_site.py`) ถ้าแก้ 3D view ให้รัน `scripts/export_3d.py` ก่อน commit
 
 <p align="center">
   <img src="docs/signal_chain/img/18_spectrogram_interpretation.png" width="100%" alt="Doppler spectrogram with each layer annotated">
@@ -63,7 +67,9 @@ radar_sim/
   plots.py         กราฟหนึ่งฟังก์ชันต่อ block
   interpret.py     spectrogram แบบมีคำอธิบายชั้นเมฆ
   linkbudget.py    radar equation สำหรับ validation
-scripts/           run_pipeline, validate, export_3d, make_test_capture, process_capture, calibrate_corner
+scripts/           run_pipeline, validate, run_mimo, signal_walkthrough, export_3d, build_site,
+                   make_test_capture, process_capture, calibrate_corner, calibrate_mimo
+site/              หน้าแรกของเว็บไซต์ (GitHub Pages)
 tests/             31 tests (range 1 m, SNR, IF≡baseband, aliasing, noise, Z/v/σv, unfolding, capture, MIMO)
 notebooks/         walkthrough.ipynb ทีละ block
 viz/               3D view (template + data จาก simulation)
